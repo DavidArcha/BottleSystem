@@ -1,0 +1,19 @@
+<div class="wrapper">
+    <!-- Background Section -->
+    <div class="background">
+      <div class="background-content">
+        <h1 class="title">GROUP</h1>
+        <div class="search-container">
+          <form [formGroup]="globelSearchForm" (ngSubmit)="onSearch()">
+            <input type="text" id="txtSearch" formControlName="searchKey" placeholder="Search documents..."
+              aria-label="Search documents" (keyup.enter)="onSearch()" #searchText>
+            <button type="submit"
+              [disabled]="!globelSearchForm.get('searchKey')?.value || isLoading">{{'common-tags.search'|translate}}</button>
+            <button type="button" (click)="onClear()">{{'common-tags.clear'|translate}}</button>
+          </form>
+          <div *ngIf="isLoading" class="loading-indicator">Loading...</div>
+        </div>
+      </div>
+    </div>
+  
+  </div>

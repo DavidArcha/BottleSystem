@@ -1,0 +1,73 @@
+{
+    "Divisions": [
+        {
+            "DivisionName": "Division-1",
+            "SubDevs": [
+                {
+                    "SubDevName": "SubDev-1",
+                    "Fields": [
+                        "CatLog",
+                        "Areas",
+                        "Area-Code",
+                        "Description"
+                    ]
+                },
+                {
+                    "SubDevName": "SubDev-2",
+                    "Fields": [
+                        "CatLog",
+                        "Areas",
+                        "Area-Code",
+                        "Description"
+                    ]
+                },
+                {
+                    "SubDevName": "SubDev-3",
+                    "Fields": [
+                        "CatLog",
+                        "Areas",
+                        "Area-Code",
+                        "Description"
+                    ]
+                }
+            ]
+        },
+        {
+            "DivisionName": "Division-2",
+            "SubDevs": [
+                {
+                    "SubDevName": "SubDev-1",
+                    "Fields": [
+                        "CatLog",
+                        "Areas"
+                    ]
+                },
+                {
+                    "SubDevName": "SubDev-2",
+                    "Fields": []
+                },
+                {
+                    "SubDevName": "SubDev-3",
+                    "Fields": []
+                }
+            ]
+        },
+        {
+            "DivisionName": "Division-3",
+            "SubDevs": [
+                {
+                    "SubDevName": "SubDev-1",
+                    "Fields": []
+                },
+                {
+                    "SubDevName": "SubDev-2",
+                    "Fields": []
+                },
+                {
+                    "SubDevName": "SubDev-3",
+                    "Fields": []
+                }
+            ]
+        }
+    ]
+}

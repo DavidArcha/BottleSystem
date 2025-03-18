@@ -1,0 +1,10 @@
+{
+    "common-tags": {
+        "home": "Heim",
+        "search": "Suchen",
+        "clear": "klar"
+    },
+    "DROPDOWN": {
+        "PLACEHOLDER": "Bitte wählen"
+      }
+}

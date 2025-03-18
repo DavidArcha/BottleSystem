@@ -1,0 +1,27 @@
+<header class="header">
+    <!-- Logo Section -->
+    <div class="logo">
+        <img src="../../assets/Header/logo.jpg" alt="Document Viewer Logo" />
+    </div>
+
+    <!-- Search Box Section -->
+    <div class="search-box" *ngIf="showSearchBox">
+        <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
+            <input type="text" id="txtSearch" formControlName="searchKey" placeholder="Search"
+                aria-label="Search documents" (keyup.enter)="onSearch()" #searchText>
+            <button type="submit"
+                [disabled]="!searchForm.get('searchKey')?.value || isLoading">{{'common-tags.search'|translate}}</button>
+            <button type="button" (click)="onClear()">{{'common-tags.clear'|translate}}</button>
+        </form>
+        <div *ngIf="isLoading" class="loading-indicator">Loading...</div>
+    </div>
+
+    <!-- Language Dropdown Section -->
+    <div class="language-dropdown">
+        <select [(ngModel)]="selectedLanguage" (change)="onLanguageChange($event)">
+            <option *ngFor="let lang of languages" [value]="lang.code">
+                {{ lang.label }}
+            </option>
+        </select>
+    </div>
+</header>
