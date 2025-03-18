@@ -1,0 +1,106 @@
+[
+    {
+      "id": "w",
+      "label": "world",
+      "children": []
+    },
+    {
+      "id": "c",
+      "label": "country",
+      "children": [
+        { "id": "c1", "label": "country1", "children": [] },
+        { "id": "c2", "label": "country2", "children": [] }
+      ]
+    },
+    {
+      "id": "f",
+      "label": "fruits",
+      "children": [
+        { 
+          "id": "a", 
+          "label": "apple", 
+          "children": [
+            { 
+              "id": "a1", 
+              "label": "apple1", 
+              "children": [
+                { "id": "a11", "label": "apple11", "children": [] },
+                { "id": "a12", "label": "apple12", "children": [] },
+                { "id": "a13", "label": "apple13", "children": [] }
+              ]
+            },
+            { "id": "a2", "label": "apple2", "children": [] },
+            { "id": "a3", "label": "apple3", "children": [] }
+          ]
+        },
+        { "id": "b", "label": "banana", "children": [] },
+        { "id": "c", "label": "cherry", "children": [] }
+      ]
+    },
+    {
+      "id": "g",
+      "label": "grains",
+      "children": [
+        {
+          "id": "d",
+          "label": "dosa",
+          "children": [
+            { "id": "d1", "label": "dosa1", "children": [] },
+            { "id": "d2", "label": "dosa2", "children": [] },
+            { "id": "d3", "label": "dosa3", "children": [] }
+          ]
+        },
+        { "id": "e", "label": "idly", "children": [] }
+      ]
+    },
+    {
+      "id": "v",
+      "label": "vegetables",
+      "children": [
+        {
+          "id": "h",
+          "label": "brinjal",
+          "children": [
+            {
+              "id": "h1",
+              "label": "brinjal1",
+              "children": [
+                {
+                  "id": "h11",
+                  "label": "brinjal11",
+                  "children": [
+                    { "id": "h111", "label": "brinjal111", "children": [] },
+                    { "id": "h112", "label": "brinjal112", "children": [] },
+                    { "id": "h113", "label": "brinjal113", "children": [] }
+                  ]
+                },
+                { "id": "h12", "label": "brinjal12", "children": [] },
+                { "id": "h13", "label": "brinjal13", "children": [] }
+              ]
+            },
+            { "id": "h2", "label": "brinjal2", "children": [] },
+            { "id": "h3", "label": "brinjal3", "children": [] }
+          ]
+        },
+        {
+          "id": "i",
+          "label": "carrot",
+          "children": [
+            { "id": "i1", "label": "carrot1", "children": [] },
+            { "id": "i2", "label": "carrot2", "children": [] },
+            { "id": "i3", "label": "carrot3", "children": [] }
+          ]
+        },
+        {
+          "id": "j",
+          "label": "drumstick",
+          "children": [
+            { "id": "j1", "label": "drumstick1", "children": [] },
+            { "id": "j2", "label": "drumstick2", "children": [] },
+            { "id": "j3", "label": "drumstick3", "children": [] }
+          ]
+        }
+      ]
+    }
+  ]
+  

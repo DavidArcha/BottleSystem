@@ -1,0 +1,41 @@
+{
+    "itemId":"1",
+    "history":[
+        {
+            "user":"US1",
+            "time":"20th Oct 10:11PM",
+            "dataValues":[
+                {
+                    "columnName":"description",
+                    "oldValue":"abc",
+                    "newValue":"efg",
+                    "action":"edit"
+                },
+                {
+                    "columnName":"name",
+                    "oldValue":"abc",
+                    "newValue":"efg",
+                    "action":"delete"
+                }
+            ]
+        },
+        {
+            "user":"US2",
+            "time":"21th Oct 10:11PM",
+            "dataValues":[
+                {
+                    "columnName":"name",
+                    "oldValue":"abc",
+                    "newValue":"efg",
+                    "action":"edit"
+                },
+                {
+                    "columnName":"amount",
+                    "oldValue":"abc",
+                    "newValue":"efg",
+                    "action":"delete"
+                }
+            ]
+        }
+    ]
+}

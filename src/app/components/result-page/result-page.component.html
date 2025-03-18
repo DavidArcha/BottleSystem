@@ -1,0 +1,31 @@
+<div class="page-container" [ngClass]="{ 'control-collapsed': isControlCollapsed }">
+    <!-- Filter Container -->
+    <div *ngIf="selectedComponent !== ''" class="filter-container">
+        <button *ngIf="isControlCollapsed" class="filter-button" (click)="toggleControlContainer()">
+            <fa-icon [icon]="faArrowRight"></fa-icon>
+        </button>
+        <div class="filter-text">Filter (3)</div>
+    </div>
+
+    <!-- Control Container -->
+    <div *ngIf="selectedComponent !== ''" class="control-container" [ngClass]="{ collapsed: isControlCollapsed }">
+        <button *ngIf="!isControlCollapsed" class="collapse-button" (click)="toggleControlContainer()">
+            <fa-icon [icon]="faArrowLeft"></fa-icon>
+        </button>
+        <div class="control-content" *ngIf="!isControlCollapsed">
+            <!-- <app-textsurvey *ngIf="selectedComponent === 'TextSurvey'"></app-textsurvey>
+            <app-simple-search *ngIf="selectedComponent === 'SimpleSearch'"></app-simple-search>
+            <app-select-search *ngIf="selectedComponent === 'SelectSearch'"></app-select-search>
+            <app-testing-level *ngIf="selectedComponent === 'Test'"></app-testing-level>
+            <app-testing-dropdown *ngIf="selectedComponent === 'TestDD'"></app-testing-dropdown>
+            <app-testing-accordion *ngIf="selectedComponent === 'TestACC'"></app-testing-accordion> -->
+        </div>
+    </div>
+
+    <!-- Result Container -->
+    <div class="result-container">
+        <div class="grid">   
+            GRID VALUES        
+        </div>
+    </div>
+</div>

@@ -1,0 +1,8 @@
+<nav class="side-navbar">
+    <ul>
+        <li *ngFor="let item of menuItems" [class.active]="activeRoute === item.route" (click)="navigate(item.route)"
+            [title]="item.tooltip">
+            <i class="material-icons">{{ item.icon }}</i>
+        </li>
+    </ul>
+</nav>

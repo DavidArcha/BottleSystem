@@ -1,0 +1,110 @@
+/* General Styling */
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Wrapper for Consistent Height Allocation */
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* Full viewport height */
+}
+
+/* Background Section */
+.background {
+    background-image: url('../../../assets/blue-sky.jpg');
+    /* Replace with your background image */
+    background-size: cover;
+    background-position: center;
+    height: 50%;
+    /* 50% of the parent height */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    /* Align to the left */
+    padding: 20px;
+    color: white;
+}
+
+.title {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+}
+
+.search-container input {
+    width: 300px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px 0 0 5px;
+    font-size: 16px;
+}
+
+.search-container button {
+    background-color: #007bff;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    padding: 10px 20px;
+    color: white;
+    cursor: pointer;
+}
+
+.search-container button:hover {
+    background-color: #0056b3;
+}
+
+/* Content Section */
+.content-section {
+    height: 40%;
+    /* 30% of the parent height */
+    padding: 20px;
+    background-color: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+}
+
+.left-column,
+.right-column {
+    flex: 1;
+    margin: 10px;
+}
+
+.left-column {
+    max-width: 50%;
+}
+
+.right-column {
+    max-width: 40%;
+}
+
+/* Links Section */
+.links-section {
+    height: 10%;
+    /* 20% of the parent height */
+    text-align: center;
+    padding: 20px;
+    background-color: #e9ecef;
+}
+
+.links-section a {
+    margin: 0 15px;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.links-section a:hover {
+    text-decoration: underline;
+}

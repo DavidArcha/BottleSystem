@@ -1,0 +1,32 @@
+[
+    {
+        "SupplierNumber":"1",
+        "SupplierName":"A",
+        "SID":"11"
+    },
+    {
+        "SupplierNumber":"2",
+        "SupplierName":"B",
+        "SID":"22"
+    },
+    {
+        "SupplierNumber":"3",
+        "SupplierName":"C",
+        "SID":"33"
+    },
+    {
+        "SupplierNumber":"4",
+        "SupplierName":"D",
+        "SID":"44"
+    },
+    {
+        "SupplierNumber":"5",
+        "SupplierName":"E",
+        "SID":"55"
+    },
+    {
+        "SupplierNumber":"5",
+        "SupplierName":"F",
+        "SID":"555"
+    }
+]
