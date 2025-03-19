@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { AccordionSectionComponent } from '../../custom/accordion/accordion-section/accordion-section.component';
 import { AccordionItem } from '../../interfaces/accordian-list.interface';
-import { Subject, takeUntil } from 'rxjs';
+import { finalize, Subject, takeUntil } from 'rxjs';
 import { SelectedField } from '../../interfaces/selectedFields.interface';
 import { DropdownItem } from '../../interfaces/table-dropdown.interface';
 import { SearchCriteria } from '../../interfaces/search-criteria.interface';
@@ -15,6 +15,7 @@ import { FieldServiceService } from './services/field-service.service';
 import { StorageService } from './services/storage.service';
 import { SearchAccordionService } from './services/search-accordion.service';
 import { trackByFn } from './utils/search-utils';
+import { SearchService } from '../../services/search.service';
 
 @Component({
   selector: 'app-select-search',
@@ -43,6 +44,9 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   public searchCriteria: SearchCriteria[] = [];
   public currentGroupField: SearchRequest | null = null;
 
+  // Saved search groups (from backend or local storage)
+  public savedGroupFields: any[] = [];
+
   // UI state properties
   public isParentArray = false;
   public isLoading$ = this.loadingSubject.asObservable();
@@ -65,11 +69,16 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   // Computed property for group data display
   set showGroupDataOutside(value: boolean) {
     this.stateService.setShowGroupDataOutside(value);
+    // If checkbox is checked and we don't have any saved groups loaded yet, load them
+    if (value) {
+      this.loadSavedSearches();
+    }
   }
 
   get showGroupDataOutside(): boolean {
     return this.stateService.getShowGroupDataOutside();
   }
+
 
   constructor(
     private changeDtr: ChangeDetectorRef,
@@ -80,6 +89,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     private stateService: StateManagementService,
     private fieldService: FieldServiceService,
     private storageService: StorageService,
+    private searchService: SearchService,
   ) { }
 
   ngOnInit(): void {
@@ -150,6 +160,11 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectionService.selectedFields$
       .pipe(takeUntil(this.destroy$))
       .subscribe(fields => this.selectedFields = fields);
+
+    // Subscribe to saved group fields
+    this.stateService.savedGroupFields$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(groups => this.savedGroupFields = groups);
   }
 
   /**
@@ -369,6 +384,65 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Load saved searches from the server
+   */
+  loadSavedSearches(): void {
+    this.loadingSavedGroups = true;
+    this.searchService.getAllSavedSearches()
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.loadingSavedGroups = false)
+      )
+      .subscribe({
+        next: (response: any) => {
+          if (response && response.groupFields) {
+            console.log('Saved searches loaded:', response);
+            this.stateService.setSavedGroupFields(response);
+          } else {
+            this.stateService.setSavedGroupFields([]);
+          }
+          this.isLoading = false;
+          this.loadingSavedGroups = false;
+
+        },
+        error: (error) => {
+          console.error('Error loading saved searches:', error);
+          this.errorMessage = 'Failed to load saved searches. Please try again later.';
+          this.stateService.setSavedGroupFields([]);
+        }
+      });
+  }
+
+  /**
+   * Handle saved field selection
+   */
+  onSavedFieldSelected(field: SearchCriteria): void {
+    if (!field) return;
+
+    // Implement selection logic here
+    // You could use the selectionService to add the field
+    console.log('Saved field selected:', field);
+
+    // Example implementation:
+    // const fieldObj = { id: field.fieldId, label: field.fieldName };
+    // const parentObj = this.getParentFromSystemType();
+    // this.selectionService.addField(fieldObj, parentObj, '', this.currentLanguage);
+  }
+
+  /**
+   * Handle saved group field title clicked
+   */
+  onSavedGroupFieldTitleClicked(groupField: SearchRequest): void {
+    if (!groupField) return;
+
+    this.currentGroupField = groupField;
+    console.log('Saved group field title clicked:', groupField);
+
+    // You could implement additional logic here to load criteria
+    // or populate the search form based on the selected group
+  }
+
+  /**
    * Clear the relation table
    */
   clearTable(): void {
@@ -441,4 +515,6 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.loadingSubject.complete();
   }
+
+
 }

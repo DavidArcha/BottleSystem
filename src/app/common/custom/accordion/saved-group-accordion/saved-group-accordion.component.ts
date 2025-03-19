@@ -76,8 +76,6 @@ export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
     this.stateService.selectedField$
       .pipe(takeUntil(this.destroy$))
       .subscribe(field => {
-        // Important: Set selectedField to null when field is null
-        // This ensures proper change detection when clearing selection
         this.selectedField = field;
         this.cdr.markForCheck();
       });
