@@ -5,6 +5,7 @@ import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 import { SearchService } from '../../../services/search.service';
 import { LanguageService } from '../../../services/language.service';
 import { RelationTableService } from '../services/relation-table.service';
+import { FieldServiceService } from '../../../componets/select-search/services/field-service.service';
 
 @Component({
   selector: 'app-relation-table',
@@ -25,7 +26,7 @@ export class RelationTableComponent {
 
   constructor(
     private relationTableService: RelationTableService,
-    private languageService: LanguageService
+    private languageService: LanguageService, private fieldService: FieldServiceService
   ) { }
 
   ngOnInit(): void {
@@ -93,6 +94,13 @@ export class RelationTableComponent {
               this.systemTypeData
             );
 
+            // Now update field labels
+            this.selectedFields = this.relationTableService.updateFieldLabels(
+              this.selectedFields,
+              this.fieldService.getFirstSystemFieldsMap(),
+              this.fieldService.getSystemFieldsMap()
+            );
+
             // Also ensure all parentSelected IDs are strings
             this.selectedFields.forEach(field => {
               if (field.parentSelected) {
@@ -122,6 +130,25 @@ export class RelationTableComponent {
           console.error('Error loading system type fields:', err);
         }
       });
+  }
+
+  // Optional helper method to get the field label
+  getFieldLabel(field: SelectedField): string {
+    if (!field.field) return '';
+
+    // If field label needs to be updated at display time
+    if (field.field.id) {
+      const updatedField = this.fieldService.findFieldById(
+        field.field.id,
+        !!field.isParentArray
+      );
+
+      if (updatedField) {
+        return updatedField.label;
+      }
+    }
+
+    return field.field.label || '';
   }
 
   /**

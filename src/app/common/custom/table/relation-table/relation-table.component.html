@@ -21,7 +21,6 @@
                     <div *ngIf="isLoading" class="loading-indicator">
                         <span>Loading...</span>
                     </div>
-
                     <!-- Parent dropdown -->
                     <ng-container *ngIf="shouldShowParentDropdown(field) && !isLoading">
                         <app-table-dropdown [data]="systemTypeData" [isTableView]="false" [multiSelect]="true"
@@ -42,7 +41,7 @@
                 </td>
 
                 <!-- Placeholder for other columns -->
-                <td>{{ field.field?.label }}</td>
+                <td>{{ getFieldLabel(field) }}</td>
                 <td>{{ field.operator?.label }}</td>
                 <td>{{ field.value }}</td>
                 <td>

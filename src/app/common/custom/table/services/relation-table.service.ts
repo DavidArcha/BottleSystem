@@ -159,4 +159,39 @@ export class RelationTableService {
       ? [String(field.parentSelected.id)] // Ensure ID is a string
       : [];
   }
+
+  /**
+ * Update field labels based on language change
+ * @param selectedFields Current selected fields
+ * @param firstSystemFieldsMap Map of fields from first accordion
+ * @param systemFieldsMap Map of fields from system accordion
+ * @returns Updated fields with correct labels
+ */
+  updateFieldLabels(
+    selectedFields: SelectedField[],
+    firstSystemFieldsMap: Map<string, any>,
+    systemFieldsMap: Map<string, any>
+  ): SelectedField[] {
+    return selectedFields.map(field => {
+      if (!field.field || !field.field.id) return field;
+
+      // Clone the field to avoid mutation
+      const updatedField = { ...field };
+
+      // Determine which map to use based on isParentArray
+      const mapToUse = field.isParentArray ? firstSystemFieldsMap : systemFieldsMap;
+      const updatedFieldData = mapToUse.get(field.field.id);
+
+      // Update field label if found
+      if (updatedFieldData) {
+        updatedField.field = {
+          id: field.field.id,
+          label: updatedFieldData.label || field.field.label
+        };
+      }
+
+      return updatedField;
+    });
+  }
+
 }
