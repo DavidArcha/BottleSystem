@@ -11,15 +11,16 @@ export interface SelectedField {
         id: string;
         label: string;
     };
-    operator: {
+    operator?: {
         id: string;
         label: string;
     };
-    operatorOptions: any[];
-    value: any;  // This can be null, string, array, or object depending on the field type
+    operatorOptions?: any[];
+    value?: any;  // This can be null, string, array, or object depending on the field type
     operatorTouched?: boolean;
     valueTouched?: boolean | boolean[];
     dropdownData?: any[];
     parentTouched?: boolean;
     isParentArray?: boolean;
+    currentLanguage?: string;
 }

@@ -423,15 +423,10 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
    */
   onSavedFieldSelected(field: SearchCriteria): void {
     if (!field) return;
-
-    // Implement selection logic here
-    // You could use the selectionService to add the field
-    console.log('Saved field selected:', field);
-
-    // Example implementation:
-    // const fieldObj = { id: field.fieldId, label: field.fieldName };
-    // const parentObj = this.getParentFromSystemType();
-    // this.selectionService.addField(fieldObj, parentObj, '', this.currentLanguage);
+    // First clear existing fields and table data
+    this.selectionService.clearFields();
+    this.isEditMode = true;
+    this.selectionService.addSavedGroupField(field);
   }
 
   /**
@@ -440,11 +435,16 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   onSavedGroupFieldTitleClicked(groupField: SearchRequest): void {
     if (!groupField) return;
 
-    this.currentGroupField = groupField;
-    console.log('Saved group field title clicked:', groupField);
-
-    // You could implement additional logic here to load criteria
-    // or populate the search form based on the selected group
+    this.selectionService.clearFields();
+    // Check if the title and title.id exists
+    if (groupField.title && groupField.title.id) {
+      this.isEditMode = true;
+      this.searchName = groupField.title.label;
+      this.searchNameId = groupField.title.id;
+    } else {
+      console.log('Saved group field has no title ID');
+    }
+    this.selectionService.addSavedGroup(groupField);
   }
 
   /**

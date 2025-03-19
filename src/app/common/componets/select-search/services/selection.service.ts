@@ -3,6 +3,8 @@ import { SelectedField } from '../../../interfaces/selectedFields.interface';
 import { BehaviorSubject } from 'rxjs';
 import { DropdownDataMapping, FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
 import { StorageService } from './storage.service';
+import { SearchCriteria } from '../../../interfaces/search-criteria.interface';
+import { SearchRequest } from '../../../interfaces/search-request.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -64,7 +66,6 @@ export class SelectionService {
     const selectedField = this.createSelectedField(field, parent, currentLanguage, isParentArray);
     const currentFields = this.selectedFieldsSubject.getValue();
     const updatedFields = [...currentFields, selectedField];
-console.log('Updated fields:', updatedFields);
     this.updateSelectedFields(updatedFields);
   }
 
@@ -85,13 +86,14 @@ console.log('Updated fields:', updatedFields);
       parentSelected: [],
       field,
       operator: { id: 'select', label: defaultLabel },
-      operatorOptions: this.getOperatorOptions(field.id),
+      operatorOptions: [],
       value: null,
-      dropdownData: this.getDropdownDataForField(field.id) || [],
+      dropdownData: [],
       parentTouched: false,
       operatorTouched: false,
       valueTouched: false,
-      isParentArray
+      isParentArray: isParentArray,
+      currentLanguage : currentLanguage,
     };
   }
 
@@ -232,5 +234,59 @@ console.log('Updated fields:', updatedFields);
     this.selectedFieldsSubject.next([]);
     this.storageService.removeItem('selectedFields');
     this.storageService.removeItem('savedSearchFields');
+  }
+
+  // Add field from saved group
+  addSavedGroupField(field: SearchCriteria): void {
+    if (!field) return;
+
+    const selectedField = this.convertSavedFieldToSelectedField(field);
+    if (selectedField) {
+      const currentFields = this.selectedFieldsSubject.getValue();
+      const updatedFields = [...currentFields, selectedField];
+      this.selectedFieldsSubject.next(updatedFields);
+      this.storageService.setItem('selectedFields', JSON.stringify(updatedFields));
+    }
+  }
+
+  // Add all fields from a saved group
+  addSavedGroup(groupField: SearchRequest): void {
+    if (!groupField || !groupField.fields || !Array.isArray(groupField.fields)) return;
+
+    // Convert each field in the group
+    const newSelectedFields = groupField.fields
+      .map(field => this.convertSavedFieldToSelectedField(field))
+      .filter(field => field !== null) as SelectedField[];
+    if (newSelectedFields.length > 0) {
+      const currentFields = this.selectedFieldsSubject.getValue();
+      const updatedFields = [...currentFields, ...newSelectedFields];
+      this.selectedFieldsSubject.next(updatedFields);
+      this.storageService.setItem('selectedFields', JSON.stringify(updatedFields));
+    }
+  }
+
+  // Convert saved field to SelectedField format
+  private convertSavedFieldToSelectedField(field: SearchCriteria): SelectedField | null {
+    if (!field || !field.field) return null;
+
+    const selectedField: SelectedField = {
+      rowid: field.rowId || '',
+      parent: field.parent || { id: '', label: '' },
+      parentSelected: field.parentSelected || [],
+      field: {
+        id: field.field.id || '',
+        label: field.field.label || ''
+      },
+      operator: {
+        id: field.operator?.id || '',
+        label: field.operator?.label || ''
+      },
+      value: field.value || null,
+      // Initialize touched states - already validated since coming from saved data
+      parentTouched: true,
+      operatorTouched: true,
+      valueTouched: true      
+    };
+    return selectedField;
   }
 }
