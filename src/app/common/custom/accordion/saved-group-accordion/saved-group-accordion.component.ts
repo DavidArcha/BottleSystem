@@ -264,8 +264,6 @@ export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
 
     // Close any open context menu
     this.contextMenuVisible = false;
-
-    console.log('All accordion sections collapsed');
   }
 
   onEditGroupFieldTitle() {
