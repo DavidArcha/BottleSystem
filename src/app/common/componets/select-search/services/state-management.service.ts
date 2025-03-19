@@ -10,58 +10,46 @@ import { StorageService } from './storage.service';
 export class StateManagementService {
   private destroy$ = new Subject<void>();
 
-  // Group data display state
+  // State subjects
   private showGroupDataOutsideSubject = new BehaviorSubject<boolean>(false);
-  public showGroupDataOutside$ = this.showGroupDataOutsideSubject.asObservable();
-
-  // Selected system type value
   private selectedSystemTypeValueSubject = new BehaviorSubject<DropdownItem | DropdownItem[] | null>(null);
-  public selectedSystemTypeValue$ = this.selectedSystemTypeValueSubject.asObservable();
-
-  // Saved group fields
   private savedGroupFieldsSubject = new BehaviorSubject<SearchRequest[]>([]);
+
+  // Public observables
+  public showGroupDataOutside$ = this.showGroupDataOutsideSubject.asObservable();
+  public selectedSystemTypeValue$ = this.selectedSystemTypeValueSubject.asObservable();
   public savedGroupFields$ = this.savedGroupFieldsSubject.asObservable();
 
   constructor(private storageService: StorageService) {
     this.loadStateFromStorage();
   }
 
-
   /**
-   * Loads all state values from storage
+   * Load all state from storage
    */
   private loadStateFromStorage(): void {
-    this.loadShowGroupDataOutsideFromStorage();
-    this.loadSelectedSystemTypeValuesFromStorage();
+    this.showGroupDataOutsideSubject.next(
+      this.storageService.getBoolPreference('showGroupDataOutside', false)
+    );
+    this.loadSelectedSystemTypeValues();
   }
 
   /**
-   * Loads group data display preference from storage
+   * Load selected system type values
    */
-  private loadShowGroupDataOutsideFromStorage(): void {
-    const stored = this.storageService.getBoolPreference('showGroupDataOutside', false);
-    this.showGroupDataOutsideSubject.next(stored);
-  }
-
-  /**
-   * Loads selected system type values from storage
-   */
-  private loadSelectedSystemTypeValuesFromStorage(): void {
+  private loadSelectedSystemTypeValues(): void {
     const savedValue = this.storageService.getItem('selectedSystemTypeValues');
-    if (savedValue) {
-      try {
-        const parsedValue = JSON.parse(savedValue);
-        this.selectedSystemTypeValueSubject.next(parsedValue);
-      } catch (e) {
-        // Reset to default on error
-        this.selectedSystemTypeValueSubject.next(null);
-      }
+    if (!savedValue) return;
+
+    try {
+      this.selectedSystemTypeValueSubject.next(JSON.parse(savedValue));
+    } catch {
+      this.selectedSystemTypeValueSubject.next(null);
     }
   }
 
-
   /**
-   * Updates group data display preference
+   * Set show group data outside preference
    */
   setShowGroupDataOutside(value: boolean): void {
     this.showGroupDataOutsideSubject.next(value);
@@ -69,78 +57,82 @@ export class StateManagementService {
   }
 
   /**
-   * Gets current group data display preference
+   * Get current show group data outside preference
    */
   getShowGroupDataOutside(): boolean {
     return this.showGroupDataOutsideSubject.getValue();
   }
 
   /**
-   * Updates selected system type value
+   * Set selected system type value
    */
   setSelectedSystemTypeValue(value: DropdownItem | DropdownItem[] | null): void {
     this.selectedSystemTypeValueSubject.next(value);
-    this.saveSelectedSystemTypeValuesToStorage(value);
+    this.saveSelectedSystemTypeValues(value);
   }
 
   /**
-   * Gets current selected system type value
+   * Get current selected system type value
    */
   getSelectedSystemTypeValue(): DropdownItem | DropdownItem[] | null {
     return this.selectedSystemTypeValueSubject.getValue();
   }
 
   /**
-   * Saves selected system type values to storage
+   * Save selected system type values to storage
    */
-  private saveSelectedSystemTypeValuesToStorage(value: DropdownItem | DropdownItem[] | null): void {
+  private saveSelectedSystemTypeValues(value: DropdownItem | DropdownItem[] | null): void {
+    if (value === null) {
+      this.storageService.removeItem('selectedSystemTypeValues');
+      return;
+    }
+
     try {
-      if (value === null) {
-        this.storageService.removeItem('selectedSystemTypeValues');
-      } else {
-        const jsonValue = JSON.stringify(value);
-        this.storageService.setItem('selectedSystemTypeValues', jsonValue);
-      }
-    } catch (error) {
-      // Handle error silently - state is still maintained in memory
+      this.storageService.setItem('selectedSystemTypeValues', JSON.stringify(value));
+    } catch {
+      // Silent error handling - state maintained in memory
     }
   }
 
-
-
-
   /**
-   * Resets all application state to default values
-   * Used for the "Clear" operation
+   * Reset all application state
    */
   resetAllState(): void {
     // Reset system type selection
     this.setSelectedSystemTypeValue(null);
 
-    // Don't reset group data display preference as it's a UI setting
-    // Don't reset saved group fields as they should persist
-
-    // Clear storage items for complete reset across page refreshes
+    // Clear storage
     this.storageService.removeItem('selectedSystemTypeValues');
     this.storageService.removeItem('savedAccordionState');
-
-    // Clear selection-related storage
     this.storageService.removeItem('selectedFields');
 
-    // Find and clear any accordion localStorage keys
+    // Clear accordion-related local storage items
+    this.clearAccordionStorage();
+  }
+
+  /**
+   * Clear accordion storage items
+   */
+  private clearAccordionStorage(): void {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (
-        key.startsWith('accordion-') ||
-        key.includes('-system-') ||
-        key.includes('-first-')
-      )) {
+      if (key && this.isAccordionKey(key)) {
         localStorage.removeItem(key);
       }
     }
   }
+
   /**
-   * Clean up resources when service is destroyed
+   * Check if a key is related to accordion state
+   */
+  private isAccordionKey(key: string): boolean {
+    return key.startsWith('accordion-') ||
+      key.includes('-system-') ||
+      key.includes('-first-');
+  }
+
+  /**
+   * Cleanup resources
    */
   ngOnDestroy(): void {
     this.destroy$.next();

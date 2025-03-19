@@ -9,36 +9,37 @@ import { extractFieldsToMap } from '../utils/search-utils';
   providedIn: 'root'
 })
 export class FieldServiceService {
-  // Loading states
+  // Loading state subjects
   private loadingSystemTypesSubject = new BehaviorSubject<boolean>(false);
-  public loadingSystemTypes$ = this.loadingSystemTypesSubject.asObservable();
-
   private loadingFieldsSubject = new BehaviorSubject<boolean>(false);
-  public loadingFields$ = this.loadingFieldsSubject.asObservable();
 
-  // Data states
+  // Data subjects
   private systemFieldsAccDataSubject = new BehaviorSubject<AccordionItem[]>([]);
-  public systemFieldsAccData$ = this.systemFieldsAccDataSubject.asObservable();
-
   private firstSystemFieldsDataSubject = new BehaviorSubject<AccordionItem[]>([]);
-  public firstSystemFieldsData$ = this.firstSystemFieldsDataSubject.asObservable();
-
   private systemTypeDataSubject = new BehaviorSubject<DropdownItem[]>([]);
-  public systemTypeData$ = this.systemTypeDataSubject.asObservable();
 
-  // Error state
+  // Error subject
   private errorSubject = new BehaviorSubject<{ hasError: boolean, message: string }>({
-    hasError: false,
-    message: ''
+    hasError: false, message: ''
   });
+
+  // Public observables
+  public loadingSystemTypes$ = this.loadingSystemTypesSubject.asObservable();
+  public loadingFields$ = this.loadingFieldsSubject.asObservable();
+  public systemFieldsAccData$ = this.systemFieldsAccDataSubject.asObservable();
+  public firstSystemFieldsData$ = this.firstSystemFieldsDataSubject.asObservable();
+  public systemTypeData$ = this.systemTypeDataSubject.asObservable();
   public error$ = this.errorSubject.asObservable();
 
-  // Fields maps for quick access
+  // Field maps for quick access
   private firstSystemFieldsMap = new Map<string, any>();
   private systemFieldsMap = new Map<string, any>();
 
   constructor(private searchService: SearchService) { }
 
+  /**
+   * Load system type fields
+   */
   loadSystemTypeFields(lang: string): Observable<void> {
     this.loadingSystemTypesSubject.next(true);
     this.errorSubject.next({ hasError: false, message: '' });
@@ -49,36 +50,40 @@ export class FieldServiceService {
       .pipe(
         finalize(() => this.loadingSystemTypesSubject.next(false)),
         catchError(err => {
-          this.errorSubject.next({
-            hasError: true,
-            message: 'Failed to load system types. Please try again.'
-          });
+          this.handleError('Failed to load system types. Please try again.');
           result$.error(err);
           return of([]);
         })
       )
       .subscribe({
         next: (fields) => {
-          if (fields.length > 0) {
-            const mappedFields = fields.map(field => ({
-              id: field.id.toString(),
-              label: field.label
-            }));
-            this.systemTypeDataSubject.next(mappedFields);
-          } else {
-            this.systemTypeDataSubject.next([]);
-          }
+          this.processSystemTypeFields(fields);
           result$.next();
           result$.complete();
         },
-        error: (err) => {
-          result$.error(err);
-        }
+        error: (err) => result$.error(err)
       });
 
     return result$.asObservable();
   }
 
+  /**
+   * Process system type fields response
+   */
+  private processSystemTypeFields(fields: any[]): void {
+    if (fields.length > 0) {
+      this.systemTypeDataSubject.next(fields.map(field => ({
+        id: field.id.toString(),
+        label: field.label
+      })));
+    } else {
+      this.systemTypeDataSubject.next([]);
+    }
+  }
+
+  /**
+   * Load first accordion data
+   */
   loadFirstAccordionData(lang: string): Observable<void> {
     this.loadingFieldsSubject.next(true);
     this.errorSubject.next({ hasError: false, message: '' });
@@ -89,10 +94,7 @@ export class FieldServiceService {
       .pipe(
         finalize(() => this.loadingFieldsSubject.next(false)),
         catchError(err => {
-          this.errorSubject.next({
-            hasError: true,
-            message: 'Failed to load field data. Please try again.'
-          });
+          this.handleError('Failed to load field data. Please try again.');
           result$.error(err);
           return of([]);
         })
@@ -104,55 +106,67 @@ export class FieldServiceService {
           result$.next();
           result$.complete();
         },
-        error: (err) => {
-          result$.error(err);
-        }
+        error: (err) => result$.error(err)
       });
 
     return result$.asObservable();
   }
 
+  /**
+   * Load accordion data for system type(s)
+   */
   loadAccordionData(selectedSysType: string | string[], lang: string): Observable<void> {
     this.loadingFieldsSubject.next(true);
     this.errorSubject.next({ hasError: false, message: '' });
     this.systemFieldsMap.clear();
 
     const result$ = new BehaviorSubject<void>(undefined);
+    const systemTypeIds = Array.isArray(selectedSysType) ? selectedSysType : [selectedSysType];
 
-    // Handle array of system types or single system type
-    const systemTypeIds = Array.isArray(selectedSysType)
-      ? selectedSysType
-      : [selectedSysType];
-
-    // If empty, return empty result
-    if (systemTypeIds.length === 0 || (systemTypeIds.length === 1 && !systemTypeIds[0])) {
-      this.systemFieldsAccDataSubject.next([]);
-      this.loadingFieldsSubject.next(false);
-      result$.next();
-      result$.complete();
+    if (this.shouldReturnEmptyResult(systemTypeIds)) {
+      this.handleEmptySystemTypes(result$);
       return result$.asObservable();
     }
 
+    this.loadSystemFieldsForTypes(systemTypeIds, lang, result$);
+    return result$.asObservable();
+  }
+
+  /**
+   * Check if we should return empty result
+   */
+  private shouldReturnEmptyResult(ids: string[]): boolean {
+    return ids.length === 0 || (ids.length === 1 && !ids[0]);
+  }
+
+  /**
+   * Handle case when no system types selected
+   */
+  private handleEmptySystemTypes(result$: BehaviorSubject<void>): void {
+    this.systemFieldsAccDataSubject.next([]);
+    this.loadingFieldsSubject.next(false);
+    result$.next();
+    result$.complete();
+  }
+
+  /**
+   * Load system fields for multiple system types
+   */
+  private loadSystemFieldsForTypes(
+    systemTypeIds: string[],
+    lang: string,
+    result$: BehaviorSubject<void>
+  ): void {
     const allFields: AccordionItem[] = [];
     let completedRequests = 0;
 
-    // Load fields for each system type
     systemTypeIds.forEach(systemTypeId => {
       this.searchService.getSystemFieldsAccData(systemTypeId, lang)
-        .pipe(
-          catchError(err => {
-            return of([]);
-          })
-        )
+        .pipe(catchError(() => of([])))
         .subscribe({
           next: (fields) => {
             allFields.push(...fields);
-
-            // Update the fields map with these fields
-            const fieldsMap = extractFieldsToMap(fields);
-            fieldsMap.forEach((value, key) => {
-              this.systemFieldsMap.set(key, value);
-            });
+            this.updateSystemFieldsMap(fields);
           },
           complete: () => {
             completedRequests++;
@@ -165,11 +179,29 @@ export class FieldServiceService {
           }
         });
     });
-
-    return result$.asObservable();
   }
 
-  // Get current states
+  /**
+   * Update system fields map with new fields
+   */
+  private updateSystemFieldsMap(fields: AccordionItem[]): void {
+    const fieldsMap = extractFieldsToMap(fields);
+    fieldsMap.forEach((value, key) => {
+      this.systemFieldsMap.set(key, value);
+    });
+  }
+
+  /**
+   * Handle error
+   */
+  private handleError(message: string): void {
+    this.errorSubject.next({
+      hasError: true,
+      message
+    });
+  }
+
+  // Getters for current state
   get systemTypeData(): DropdownItem[] {
     return this.systemTypeDataSubject.getValue();
   }
@@ -182,7 +214,7 @@ export class FieldServiceService {
     return this.systemFieldsAccDataSubject.getValue();
   }
 
-  // Get maps for field lookup
+  // Getters for field maps
   getFirstSystemFieldsMap(): Map<string, any> {
     return this.firstSystemFieldsMap;
   }
@@ -191,15 +223,13 @@ export class FieldServiceService {
     return this.systemFieldsMap;
   }
 
-  // Clear fields data
+  // Clear methods
   clearSystemFieldsAccData(): void {
     this.systemFieldsAccDataSubject.next([]);
     this.systemFieldsMap.clear();
   }
 
-  // Clear error state
   clearError(): void {
     this.errorSubject.next({ hasError: false, message: '' });
   }
-
 }

@@ -10,42 +10,50 @@ import { StorageService } from './storage.service';
 export class SelectionService {
   private selectedFieldsSubject = new BehaviorSubject<SelectedField[]>([]);
   public selectedFields$ = this.selectedFieldsSubject.asObservable();
-
   private operatorsDdDataSubject = new BehaviorSubject<any>(null);
 
   constructor(private storageService: StorageService) { }
 
-
-  // Get operators data for a specific field
+  /**
+   * Get operators data for a specific field type
+   */
   getOperatorOptions(field: string): any[] {
     const operatorsData = this.operatorsDdDataSubject.getValue();
     if (!operatorsData) return [];
 
-    const fieldLower = field.toLowerCase();
-    switch (FieldTypeMapping[fieldLower]) {
-      case FieldType.Bool:
-        return operatorsData.boolOperations || [];
-      case FieldType.Text:
-        return operatorsData.stringOperations || [];
-      case FieldType.Date:
-        return operatorsData.dateOperations || [];
-      case FieldType.Number:
-        return operatorsData.numberOperations || [];
-      case FieldType.Dropdown:
-        return operatorsData.stringOperations || [];
-      default:
-        return operatorsData.stringOperations || []; // Default to string operations
+    const fieldType = this.getFieldType(field);
+    return this.getOperationsForFieldType(fieldType, operatorsData);
+  }
+
+  /**
+   * Get field type from field ID
+   */
+  private getFieldType(field: string): FieldType {
+    return FieldTypeMapping[field.toLowerCase()] || FieldType.Text;
+  }
+
+  /**
+   * Get operations based on field type
+   */
+  private getOperationsForFieldType(type: FieldType, operatorsData: any): any[] {
+    switch (type) {
+      case FieldType.Bool: return operatorsData.boolOperations || [];
+      case FieldType.Date: return operatorsData.dateOperations || [];
+      case FieldType.Number: return operatorsData.numberOperations || [];
+      default: return operatorsData.stringOperations || [];
     }
   }
 
-  // Get dropdown data for a field
+  /**
+   * Get dropdown data for a field
+   */
   getDropdownDataForField(fieldId: string): any[] {
-    const dataSource = DropdownDataMapping[fieldId];
-    // Implement dropdown data source mapping here
-    return [];
+    return DropdownDataMapping[fieldId] ? [] : [];
   }
 
-  // Add field to selection
+  /**
+   * Add field to selected fields
+   */
   addField(
     field: { id: string, label: string },
     parent: { id: string, label: string },
@@ -53,44 +61,51 @@ export class SelectionService {
     currentLanguage: string = 'en',
     isParentArray: boolean = false
   ): void {
-
-    const operatorOptions = this.getOperatorOptions(field.id);
-    const defaultOperator = {
-      id: 'select',
-      label: currentLanguage === 'de' ? 'Auswählen' : 'Select'
-    };
-    const defaultValue = null;
-    const dropdownData = this.getDropdownDataForField(field.id) || [];
-
-    // Create a new SelectedField object with all required properties
-    const selectedField: SelectedField = {
-      rowid: '',
-      parent: parent,
-      parentSelected: [],
-      field: field,
-      operator: defaultOperator,
-      operatorOptions: operatorOptions,
-      value: defaultValue,
-      dropdownData: dropdownData,
-      parentTouched: false,
-      operatorTouched: false,
-      valueTouched: false,
-      isParentArray: isParentArray,
-    };
-    // Get current fields and add the new one
+    const selectedField = this.createSelectedField(field, parent, currentLanguage, isParentArray);
     const currentFields = this.selectedFieldsSubject.getValue();
     const updatedFields = [...currentFields, selectedField];
-    this.selectedFieldsSubject.next(updatedFields);
-    console.log('Updated fields:', updatedFields);
-
-    // Save to storage
-    this.storageService.setItem('selectedFields', JSON.stringify(updatedFields));
+console.log('Updated fields:', updatedFields);
+    this.updateSelectedFields(updatedFields);
   }
 
   /**
-* Update field labels for language change
-* This ensures all fields display in the correct language
-*/
+   * Create a new selected field object
+   */
+  private createSelectedField(
+    field: { id: string, label: string },
+    parent: { id: string, label: string },
+    currentLanguage: string,
+    isParentArray: boolean
+  ): SelectedField {
+    const defaultLabel = currentLanguage === 'de' ? 'Auswählen' : 'Select';
+
+    return {
+      rowid: '',
+      parent,
+      parentSelected: [],
+      field,
+      operator: { id: 'select', label: defaultLabel },
+      operatorOptions: this.getOperatorOptions(field.id),
+      value: null,
+      dropdownData: this.getDropdownDataForField(field.id) || [],
+      parentTouched: false,
+      operatorTouched: false,
+      valueTouched: false,
+      isParentArray
+    };
+  }
+
+  /**
+   * Update selected fields and save to storage
+   */
+  private updateSelectedFields(fields: SelectedField[]): void {
+    this.selectedFieldsSubject.next(fields);
+    this.saveFieldsToStorage(fields);
+  }
+
+  /**
+   * Update field labels for language change
+   */
   updateFieldLabels(
     firstSystemFieldsMap: Map<string, any>,
     systemFieldsMap: Map<string, any>,
@@ -98,141 +113,124 @@ export class SelectionService {
     currentLanguage: string
   ): void {
     const currentFields = this.selectedFieldsSubject.getValue();
-    if (!currentFields || currentFields.length === 0) return;
+    if (!currentFields?.length) return;
 
-    // Create a new array to avoid direct mutation
     const updatedFields = currentFields.map(field => {
       const updatedField = { ...field };
 
-      // Update field label from maps, keeping ID the same
-      if (updatedField.field.id) {
-        // Try to find the field in firstSystemFieldsMap
-        const firstSystemField = firstSystemFieldsMap.get(updatedField.field.id);
-        if (firstSystemField && firstSystemField.label) {
-          updatedField.field.label = firstSystemField.label;
-        } else {
-          // If not found, try systemFieldsMap
-          const systemField = systemFieldsMap.get(updatedField.field.id);
-          if (systemField && systemField.label) {
-            updatedField.field.label = systemField.label;
-          }
-        }
-      }
-
-      // Update parent label if applicable
-      if (updatedField.parent && updatedField.parent.id) {
-        const parentId = updatedField.parent.id;
-
-        // Look for the parent in system type data (system types are parents for second accordion)
-        const systemTypeItem = systemTypeData.find(item => item.id === parentId);
-        if (systemTypeItem && systemTypeItem.label) {
-          updatedField.parent = {
-            id: parentId,
-            label: systemTypeItem.label
-          };
-        }
-      }
-
-      // Update operator label if needed
-      if (updatedField.operator && updatedField.operator.id) {
-        // Here we would need access to operators data in the correct language
-        // For now, we'll just ensure the structure is maintained
-        const operatorsData = this.operatorsDdDataSubject.getValue();
-
-        if (operatorsData) {
-          // Find the operator in all operator types
-          const operatorTypes = [
-            'stringOperations', 'numberOperations', 'dateOperations',
-            'boolOperations', 'timeOperations'
-          ];
-
-          let found = false;
-          for (const type of operatorTypes) {
-            if (!operatorsData[type]) continue;
-
-            const operator = operatorsData[type].find(
-              (op: any) => op.id === updatedField.operator?.id
-            );
-
-            if (operator) {
-              updatedField.operator = {
-                id: operator.id,
-                label: operator.label
-              };
-              found = true;
-              break;
-            }
-          }
-
-          // If not found, preserve the operator ID but update label with default text
-          if (!found && updatedField.operator) {
-            const defaultLabel = currentLanguage === 'de' ? 'Auswählen' : 'Select';
-            updatedField.operator = {
-              id: updatedField.operator.id,
-              label: defaultLabel
-            };
-          }
-        }
-      }
+      this.updateFieldLabel(updatedField, firstSystemFieldsMap, systemFieldsMap);
+      this.updateParentLabel(updatedField, systemTypeData);
+      this.updateOperatorLabel(updatedField, currentLanguage);
 
       return updatedField;
     });
 
-    // Update the BehaviorSubject with the new array
-    this.selectedFieldsSubject.next(updatedFields);
-
-    // Save the updated fields to storage
-    this.saveFieldsToStorage(updatedFields);
+    this.updateSelectedFields(updatedFields);
   }
 
   /**
-* Save fields to storage
-*/
+   * Update field label
+   */
+  private updateFieldLabel(field: SelectedField, firstMap: Map<string, any>, systemMap: Map<string, any>): void {
+    if (!field.field?.id) return;
+
+    const firstSystemField = firstMap.get(field.field.id);
+    if (firstSystemField?.label) {
+      field.field.label = firstSystemField.label;
+      return;
+    }
+
+    const systemField = systemMap.get(field.field.id);
+    if (systemField?.label) {
+      field.field.label = systemField.label;
+    }
+  }
+
+  /**
+   * Update parent label
+   */
+  private updateParentLabel(field: SelectedField, systemTypeData: any[]): void {
+    if (!field.parent?.id) return;
+
+    const systemTypeItem = systemTypeData.find(item => item.id === field.parent.id);
+    if (systemTypeItem?.label) {
+      field.parent = {
+        id: field.parent.id,
+        label: systemTypeItem.label
+      };
+    }
+  }
+
+  /**
+   * Update operator label
+   */
+  private updateOperatorLabel(field: SelectedField, language: string): void {
+    if (!field.operator?.id) return;
+
+    const operatorsData = this.operatorsDdDataSubject.getValue();
+    if (!operatorsData) return;
+
+    const operatorTypes = [
+      'stringOperations', 'numberOperations', 'dateOperations',
+      'boolOperations', 'timeOperations'
+    ];
+
+    // Try to find operator in all operation types
+    for (const type of operatorTypes) {
+      if (!operatorsData[type]) continue;
+
+      const operator = operatorsData[type].find(
+        (op: any) => op.id === field.operator?.id
+      );
+
+      if (operator) {
+        field.operator = { id: operator.id, label: operator.label };
+        return;
+      }
+    }
+
+    // Default label if not found
+    const defaultLabel = language === 'de' ? 'Auswählen' : 'Select';
+    field.operator = { id: field.operator.id, label: defaultLabel };
+  }
+
+  /**
+   * Save fields to storage
+   */
   private saveFieldsToStorage(fields: SelectedField[]): void {
     if (!fields) return;
-
     try {
-      const fieldsJson = JSON.stringify(fields);
-      this.storageService.setItem('selectedFields', fieldsJson);
+      this.storageService.setItem('selectedFields', JSON.stringify(fields));
     } catch (e) {
       console.error('Error saving fields to storage:', e);
     }
   }
 
-  // Update fields using a map without changing parent values
-  updateFieldLabelsWithMap(
-    fieldsMap: Map<string, any>,
-    currentFields: SelectedField[]
-  ): void {
-    if (currentFields.length === 0) return;
+  /**
+   * Update field labels using a map without changing parent values
+   */
+  updateFieldLabelsWithMap(fieldsMap: Map<string, any>, currentFields: SelectedField[]): void {
+    if (!currentFields.length) return;
 
-    const updatedFields = currentFields.map((selectedField) => {
-      if (selectedField.field && selectedField.field.id) {
+    const updatedFields = currentFields.map(selectedField => {
+      if (selectedField.field?.id) {
         const field = fieldsMap.get(selectedField.field.id);
         if (field) {
-          selectedField.field = {
-            id: selectedField.field.id,
-            label: field.label || ''
-          };
+          selectedField.field = { id: selectedField.field.id, label: field.label || '' };
         }
       }
       return selectedField;
     });
 
-    this.selectedFieldsSubject.next(updatedFields);
-    this.storageService.setItem('selectedFields', JSON.stringify(updatedFields));
+    this.updateSelectedFields(updatedFields);
   }
 
-  // Clear all fields
-  // Clear fields and ensure proper cleanup
+  /**
+   * Clear all fields
+   */
   clearFields(): void {
-    // Update the subject with empty array
     this.selectedFieldsSubject.next([]);
-
-    // Clear from storage to ensure persistence
     this.storageService.removeItem('selectedFields');
-    this.storageService.removeItem('savedSearchFields'); // Clear legacy key too
-
+    this.storageService.removeItem('savedSearchFields');
   }
-
 }

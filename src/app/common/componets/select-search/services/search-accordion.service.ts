@@ -7,11 +7,11 @@ import { AccordionItem } from '../../../interfaces/accordian-list.interface';
   providedIn: 'root'
 })
 export class SearchAccordionService {
-  // Track accordion open/closed state
+  // Accordion state tracking
   private firstAccordionExpandedState = new Map<string, boolean>();
   private systemAccordionExpandedState = new Map<string, boolean>();
 
-  // Observable for expanded state changes
+  // State change notification
   private accordionStateChangedSubject = new BehaviorSubject<string>('');
   public accordionStateChanged$ = this.accordionStateChangedSubject.asObservable();
 
@@ -20,7 +20,7 @@ export class SearchAccordionService {
   }
 
   /**
-   * Load saved accordion state from storage
+   * Load saved accordion state
    */
   private loadAccordionState(): void {
     const savedState = this.storageService.getObject<{
@@ -28,25 +28,23 @@ export class SearchAccordionService {
       systemAccordion: Record<string, boolean>
     }>('savedAccordionState');
 
-    if (savedState) {
-      // Restore first accordion state
-      if (savedState.firstAccordion) {
-        for (const [id, isExpanded] of Object.entries(savedState.firstAccordion)) {
-          this.firstAccordionExpandedState.set(id, isExpanded);
-        }
-      }
+    if (!savedState) return;
 
-      // Restore system accordion state
-      if (savedState.systemAccordion) {
-        for (const [id, isExpanded] of Object.entries(savedState.systemAccordion)) {
-          this.systemAccordionExpandedState.set(id, isExpanded);
-        }
-      }
+    // Load first accordion state
+    if (savedState.firstAccordion) {
+      Object.entries(savedState.firstAccordion)
+        .forEach(([id, isExpanded]) => this.firstAccordionExpandedState.set(id, isExpanded));
+    }
+
+    // Load system accordion state
+    if (savedState.systemAccordion) {
+      Object.entries(savedState.systemAccordion)
+        .forEach(([id, isExpanded]) => this.systemAccordionExpandedState.set(id, isExpanded));
     }
   }
 
   /**
-   * Save current accordion state to storage
+   * Save current accordion state
    */
   private saveAccordionState(): void {
     const stateToSave = {
@@ -58,27 +56,27 @@ export class SearchAccordionService {
   }
 
   /**
-   * Toggle the expanded state of an accordion item
+   * Toggle accordion item expanded state
    */
   toggleAccordionItem(id: string, isFirstAccordion: boolean, value: boolean): void {
-    if (isFirstAccordion) {
-      this.firstAccordionExpandedState.set(id, value);
-    } else {
-      this.systemAccordionExpandedState.set(id, value);
-    }
+    const targetMap = isFirstAccordion ?
+      this.firstAccordionExpandedState :
+      this.systemAccordionExpandedState;
+
+    targetMap.set(id, value);
     this.saveAccordionState();
     this.accordionStateChangedSubject.next(id);
   }
 
   /**
-   * Get the expanded state of an accordion item
+   * Check if an accordion item is expanded
    */
   isExpanded(id: string, isFirstAccordion: boolean): boolean {
-    if (isFirstAccordion) {
-      return this.firstAccordionExpandedState.get(id) || false;
-    } else {
-      return this.systemAccordionExpandedState.get(id) || false;
-    }
+    const targetMap = isFirstAccordion ?
+      this.firstAccordionExpandedState :
+      this.systemAccordionExpandedState;
+
+    return targetMap.get(id) || false;
   }
 
   /**
@@ -100,20 +98,24 @@ export class SearchAccordionService {
   }
 
   /**
-   * Set expanded state for all items in an accordion
+   * Set expanded state for all accordion items
    */
-  private setExpandState(accordionData: AccordionItem[], isExpanded: boolean, isFirstAccordion: boolean): void {
+  private setExpandState(
+    accordionData: AccordionItem[],
+    isExpanded: boolean,
+    isFirstAccordion: boolean
+  ): void {
     const processItems = (items: AccordionItem[]) => {
       items.forEach(item => {
         if (item.id) {
-          if (isFirstAccordion) {
-            this.firstAccordionExpandedState.set(item.id, isExpanded);
-          } else {
-            this.systemAccordionExpandedState.set(item.id, isExpanded);
-          }
+          const targetMap = isFirstAccordion ?
+            this.firstAccordionExpandedState :
+            this.systemAccordionExpandedState;
+
+          targetMap.set(item.id, isExpanded);
         }
 
-        if (item.children && item.children.length > 0) {
+        if (item.children?.length > 0) {
           processItems(item.children);
         }
       });
@@ -128,18 +130,27 @@ export class SearchAccordionService {
   clearAccordionState(): void {
     this.firstAccordionExpandedState.clear();
     this.systemAccordionExpandedState.clear();
-
-    // More aggressive localStorage clearing for accordion state
     this.storageService.removeItem('savedAccordionState');
+    this.clearAccordionLocalStorage();
+    this.accordionStateChangedSubject.next('clear');
+  }
 
-    // Clear any accordion section keys in localStorage
+  /**
+   * Clear accordion-related items from localStorage
+   */
+  private clearAccordionLocalStorage(): void {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith('accordion-') || key.includes('Accordion'))) {
+      if (key && this.isAccordionStorageKey(key)) {
         localStorage.removeItem(key);
       }
     }
+  }
 
-    this.accordionStateChangedSubject.next('clear');
+  /**
+   * Check if a key is related to accordion storage
+   */
+  private isAccordionStorageKey(key: string): boolean {
+    return key.startsWith('accordion-') || key.includes('Accordion');
   }
 }

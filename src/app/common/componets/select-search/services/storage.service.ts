@@ -140,4 +140,14 @@ export class StorageService {
       // Handle serialization errors silently
     }
   }
+
+  /**
+  * Clear storage data
+  */
+  clearStorageData(): void {
+    this.removeItem('selectedFields');
+    this.removeItem('selectedSystemTypeValues');
+    this.removeItem('savedAccordionState');
+    localStorage.removeItem('savedAccordionState');
+  }
 }
