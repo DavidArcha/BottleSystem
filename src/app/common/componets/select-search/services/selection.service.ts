@@ -3,6 +3,8 @@ import { SelectedField } from '../../../interfaces/selectedFields.interface';
 import { BehaviorSubject } from 'rxjs';
 import { DropdownDataMapping, FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
 import { StorageService } from './storage.service';
+import { SearchCriteria } from '../../../interfaces/search-criteria.interface';
+import { SearchRequest } from '../../../interfaces/search-request.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -64,7 +66,6 @@ export class SelectionService {
     const selectedField = this.createSelectedField(field, parent, currentLanguage, isParentArray);
     const currentFields = this.selectedFieldsSubject.getValue();
     const updatedFields = [...currentFields, selectedField];
-console.log('Updated fields:', updatedFields);
     this.updateSelectedFields(updatedFields);
   }
 
@@ -85,13 +86,14 @@ console.log('Updated fields:', updatedFields);
       parentSelected: [],
       field,
       operator: { id: 'select', label: defaultLabel },
-      operatorOptions: this.getOperatorOptions(field.id),
+      operatorOptions: [],
       value: null,
-      dropdownData: this.getDropdownDataForField(field.id) || [],
+      dropdownData: [],
       parentTouched: false,
       operatorTouched: false,
       valueTouched: false,
-      isParentArray
+      isParentArray: isParentArray,
+      currentLanguage: currentLanguage,
     };
   }
 
@@ -232,5 +234,122 @@ console.log('Updated fields:', updatedFields);
     this.selectedFieldsSubject.next([]);
     this.storageService.removeItem('selectedFields');
     this.storageService.removeItem('savedSearchFields');
+  }
+
+  // Add field from saved group
+  addSavedGroupField(field: SearchCriteria): void {
+    if (!field) return;
+
+    const selectedField = this.convertSavedFieldToSelectedField(field);
+    if (selectedField) {
+      const currentFields = this.selectedFieldsSubject.getValue();
+      const updatedFields = [...currentFields, selectedField];
+      this.selectedFieldsSubject.next(updatedFields);
+      this.storageService.setItem('selectedFields', JSON.stringify(updatedFields));
+    }
+  }
+
+  // Add all fields from a saved group
+  addSavedGroup(groupField: SearchRequest): void {
+    if (!groupField || !groupField.fields || !Array.isArray(groupField.fields)) return;
+
+    // Convert each field in the group
+    const newSelectedFields = groupField.fields
+      .map(field => this.convertSavedFieldToSelectedField(field))
+      .filter(field => field !== null) as SelectedField[];
+    if (newSelectedFields.length > 0) {
+      const currentFields = this.selectedFieldsSubject.getValue();
+      const updatedFields = [...currentFields, ...newSelectedFields];
+      this.selectedFieldsSubject.next(updatedFields);
+      this.storageService.setItem('selectedFields', JSON.stringify(updatedFields));
+    }
+  }
+
+  private convertSavedFieldToSelectedField(field: SearchCriteria): SelectedField | null {
+    if (!field || !field.field) return null;
+
+    // Logic for isParentArray:
+    // 1. If parent has empty ID AND parentSelected has values, isParentArray should be true
+    // 2. If parent has non-empty ID AND parentSelected is empty, isParentArray should be false
+    const hasEmptyParentId = !field.parent?.id;
+    const hasParentSelected = Array.isArray(field.parentSelected) && field.parentSelected.length > 0;
+
+    // Determine isParentArray based on the specific conditions
+    let isParentArray: boolean;
+
+    // Case 1: Empty parent ID and has parentSelected values
+    if (hasEmptyParentId && hasParentSelected) {
+      isParentArray = true;
+    }
+    // Case 2: Non-empty parent ID and empty parentSelected
+    else if (!hasEmptyParentId && !hasParentSelected) {
+      isParentArray = false;
+    }
+    // For other cases, determine based on whether we have multiple parents
+    else {
+      isParentArray = hasParentSelected;
+    }
+
+    const selectedField: SelectedField = {
+      rowid: field.rowId || '',
+      parent: field.parent || { id: '', label: '' },
+      parentSelected: field.parentSelected || [],
+      field: {
+        id: field.field.id || '',
+        label: field.field.label || ''
+      },
+      operator: {
+        id: field.operator?.id || '',
+        label: field.operator?.label || ''
+      },
+      value: field.value || null,
+      isParentArray: isParentArray,
+      parentTouched: true,
+      operatorTouched: true,
+      valueTouched: true
+    };
+    return selectedField;
+  }
+
+  /**
+  * Load selected fields from storage
+  * @param currentLanguage The current language to use for labels
+  */
+  loadSelectedFieldsFromStorage(currentLanguage: string): void {
+    try {
+      // Get fields from storage service
+      const storedFieldsStr = this.storageService.getItem('selectedFields');
+
+      if (storedFieldsStr) {
+        // Parse the JSON string
+        const storedFields = JSON.parse(storedFieldsStr) as SelectedField[];
+
+        if (storedFields && storedFields.length > 0) {
+          // Update current language for each field
+          const updatedFields = storedFields.map(field => ({
+            ...field,
+            currentLanguage: currentLanguage
+          }));
+
+          // Update the selected fields with the stored values
+          this.selectedFieldsSubject.next(updatedFields);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading selected fields from storage:', error);
+      // In case of error, initialize with empty array
+      this.selectedFieldsSubject.next([]);
+    }
+  }
+
+  // Delete field
+  deleteField(index: number): void {
+    const currentFields = this.selectedFieldsSubject.getValue();
+    if (index < 0 || index >= currentFields.length) return;
+
+    currentFields.splice(index, 1);
+    this.selectedFieldsSubject.next([...currentFields]);
+    this.storageService.setItem('selectedFields', JSON.stringify(currentFields));
+    localStorage.removeItem('savedAccordionState');
   }
 }

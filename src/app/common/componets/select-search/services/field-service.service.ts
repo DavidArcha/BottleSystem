@@ -232,4 +232,18 @@ export class FieldServiceService {
   clearError(): void {
     this.errorSubject.next({ hasError: false, message: '' });
   }
+
+  /**
+ * Find field by ID in the appropriate accordion data source
+ * @param fieldId The ID of the field to find
+ * @param isParentArray Whether to check in firstSystemFieldsData (true) or systemFieldsAccData (false)
+ * @returns The found field or undefined
+ */
+  findFieldById(fieldId: string, isParentArray: boolean): any {
+    if (!fieldId) return undefined;
+
+    // Determine which map to search based on isParentArray
+    const mapToSearch = isParentArray ? this.firstSystemFieldsMap : this.systemFieldsMap;
+    return mapToSearch.get(fieldId);
+  }
 }

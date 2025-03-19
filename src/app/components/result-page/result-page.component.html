@@ -14,6 +14,8 @@
         </button>
         <div class="control-content" *ngIf="!isControlCollapsed">
             <app-select-search *ngIf="selectedComponent === 'SelectSearch'"></app-select-search>
+            <app-testing-saved-saerch-acc
+                *ngIf="selectedComponent === 'TestSSAcc'"></app-testing-saved-saerch-acc>
         </div>
     </div>
 

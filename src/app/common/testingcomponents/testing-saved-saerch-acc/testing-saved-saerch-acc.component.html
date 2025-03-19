@@ -1,0 +1,19 @@
+<br />
+<div class="saved-search-accordion">
+    <div class="saved-search-accordion__header">
+        <h2>Saved Search</h2>
+    </div>
+    <div class="saved-search-accordion__content">
+        <div *ngIf="isLoading" class="loading-indicator">
+            <p>Loading saved searches...</p>
+        </div>
+        <div *ngIf="errorMessage" class="error-message">
+            <p>{{ errorMessage }}</p>
+        </div>
+
+        <app-saved-group-accordion [groups]="savedGroupFields" (fieldSelected)="onSavedFieldSelected($event)"
+            (groupFieldTitleClicked)="onSavedGroupFieldTitleClicked($event)">
+        </app-saved-group-accordion>
+
+    </div>
+</div>

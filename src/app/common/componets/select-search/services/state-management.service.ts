@@ -32,6 +32,7 @@ export class StateManagementService {
       this.storageService.getBoolPreference('showGroupDataOutside', false)
     );
     this.loadSelectedSystemTypeValues();
+    this.loadSavedGroupFields();
   }
 
   /**
@@ -49,6 +50,18 @@ export class StateManagementService {
   }
 
   /**
+   * Load saved group fields from storage
+   */
+  private loadSavedGroupFields(): void {
+    const savedGroups = this.storageService.getObject<SearchRequest[]>('savedGroupFields');
+    console.log('Loaded saved groups from storage:', savedGroups);
+    if (savedGroups) {
+      this.savedGroupFieldsSubject.next(savedGroups);
+    }
+  }
+
+
+  /**
    * Set show group data outside preference
    */
   setShowGroupDataOutside(value: boolean): void {
@@ -61,6 +74,21 @@ export class StateManagementService {
    */
   getShowGroupDataOutside(): boolean {
     return this.showGroupDataOutsideSubject.getValue();
+  }
+
+  /**
+   * Get saved group fields
+   */
+  getSavedGroupFields(): SearchRequest[] {
+    return this.savedGroupFieldsSubject.getValue();
+  }
+
+  /**
+   * Set saved group fields
+   */
+  setSavedGroupFields(groups: SearchRequest[]): void {
+    this.savedGroupFieldsSubject.next(groups);
+    this.storageService.setObject('savedGroupFields', groups);
   }
 
   /**
@@ -95,16 +123,20 @@ export class StateManagementService {
   }
 
   /**
-   * Reset all application state
-   */
+    * Reset all application state
+    */
   resetAllState(): void {
     // Reset system type selection
     this.setSelectedSystemTypeValue(null);
+
+    // Reset saved group fields
+    this.setSavedGroupFields([]);
 
     // Clear storage
     this.storageService.removeItem('selectedSystemTypeValues');
     this.storageService.removeItem('savedAccordionState');
     this.storageService.removeItem('selectedFields');
+    this.storageService.removeItem('savedGroupFields');
 
     // Clear accordion-related local storage items
     this.clearAccordionStorage();

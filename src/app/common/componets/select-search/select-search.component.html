@@ -8,6 +8,14 @@
     </div>
 
     <!-- Existing code... -->
+    <div *ngIf="showGroupDataOutside">
+        <app-saved-group-accordion #savedGroupAccordion [groups]="savedGroupFields"
+            (fieldSelected)="onSavedFieldSelected($event)"
+            (groupFieldTitleClicked)="onSavedGroupFieldTitleClicked($event)">
+        </app-saved-group-accordion>
+    </div>
+
+    <!-- Existing code... -->
     <div class="first-accordion-section">
         <!-- Accordion sections with trackBy for performance -->
         <app-accordion-section #firstAccordion *ngFor="let section of firstSystemFieldsData; trackBy: trackByFn"
@@ -40,6 +48,10 @@
         [section]="section" [parentPath]="''" [isLoading]="isLoading" [sectionType]="'system'"
         (fieldSelected)="onFieldSelected($event)">
     </app-accordion-section>
+
+    <app-relation-table [selectedFields]="selectedFields" [selectedLanguage]="currentLanguage"
+        (deleteSelectedField)="onDeleteSelectedField($event)" (searchSelectedField)="onSearchSelectedField($event)">
+    </app-relation-table>
 
 
 

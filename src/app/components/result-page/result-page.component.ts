@@ -57,16 +57,10 @@ export class ResultPageComponent implements OnInit {
     let newComponent = '';
     if (urlSegments.length > 1) {
       const secondSegment = urlSegments[1].path;
-      if (secondSegment === 'TextSurvey') {
-        newComponent = 'TextSurvey';
-      } else if (secondSegment === 'SimpleSearch') {
-        newComponent = 'SimpleSearch';
-      } else if (secondSegment === 'Test') {
-        newComponent = 'Test';
-      } else if (secondSegment === 'TestDD') {
-        newComponent = 'TestDD';
-      } else if (secondSegment === 'TestACC') {
-        newComponent = 'TestACC';
+      if (secondSegment === 'TestSSAcc') {
+        newComponent = 'TestSSAcc';
+      } else if (secondSegment === 'SelectSearch') {
+        newComponent = 'SelectSearch';
       }
     }
     // This call now restores collapse state on refresh if needed.
@@ -76,8 +70,8 @@ export class ResultPageComponent implements OnInit {
     this.route.url.subscribe(url => {
       const pathSegment = url[1]?.path || '';
       let updatedComponent = '';
-      if (pathSegment === 'TextSurvey') {
-        updatedComponent = 'TextSurvey';
+      if (pathSegment === 'TestSSAcc') {
+        updatedComponent = 'TestSSAcc';
       } else if (pathSegment === 'SelectSearch') {
         updatedComponent = 'SelectSearch';
       }

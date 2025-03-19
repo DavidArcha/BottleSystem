@@ -8,6 +8,8 @@ const routes: Routes = [
   { path: 'home', component: HomePageComponent },
   { path: 'resultpage', component: ResultPageComponent },
   { path: 'resultpage/SelectSearch', component: ResultPageComponent },
+  { path: 'resultpage/TestSSAcc', component: ResultPageComponent },
+
 
 ];
 

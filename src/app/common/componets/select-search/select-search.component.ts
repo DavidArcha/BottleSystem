@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { AccordionSectionComponent } from '../../custom/accordion/accordion-section/accordion-section.component';
 import { AccordionItem } from '../../interfaces/accordian-list.interface';
-import { Subject, takeUntil } from 'rxjs';
+import { finalize, Subject, takeUntil } from 'rxjs';
 import { SelectedField } from '../../interfaces/selectedFields.interface';
 import { DropdownItem } from '../../interfaces/table-dropdown.interface';
 import { SearchCriteria } from '../../interfaces/search-criteria.interface';
@@ -15,6 +15,7 @@ import { FieldServiceService } from './services/field-service.service';
 import { StorageService } from './services/storage.service';
 import { SearchAccordionService } from './services/search-accordion.service';
 import { trackByFn } from './utils/search-utils';
+import { SearchService } from '../../services/search.service';
 
 @Component({
   selector: 'app-select-search',
@@ -43,6 +44,9 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   public searchCriteria: SearchCriteria[] = [];
   public currentGroupField: SearchRequest | null = null;
 
+  // Saved search groups (from backend or local storage)
+  public savedGroupFields: any[] = [];
+
   // UI state properties
   public isParentArray = false;
   public isLoading$ = this.loadingSubject.asObservable();
@@ -65,11 +69,16 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   // Computed property for group data display
   set showGroupDataOutside(value: boolean) {
     this.stateService.setShowGroupDataOutside(value);
+    // If checkbox is checked and we don't have any saved groups loaded yet, load them
+    if (value) {
+      this.loadSavedSearches();
+    }
   }
 
   get showGroupDataOutside(): boolean {
     return this.stateService.getShowGroupDataOutside();
   }
+
 
   constructor(
     private changeDtr: ChangeDetectorRef,
@@ -80,11 +89,21 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     private stateService: StateManagementService,
     private fieldService: FieldServiceService,
     private storageService: StorageService,
+    private searchService: SearchService,
   ) { }
 
   ngOnInit(): void {
     this.setupSubscriptions();
     this.loadSelectedSystemTypeValuesFromStorage();
+    this.loadSelectedFieldsFromStorage();
+  }
+
+  /**
+  * Load selected fields from storage
+  */
+  private loadSelectedFieldsFromStorage(): void {
+    // This will trigger the selectionService to load and emit the stored selected fields
+    this.selectionService.loadSelectedFieldsFromStorage(this.currentLanguage);
   }
 
   /**
@@ -150,6 +169,11 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectionService.selectedFields$
       .pipe(takeUntil(this.destroy$))
       .subscribe(fields => this.selectedFields = fields);
+
+    // Subscribe to saved group fields
+    this.stateService.savedGroupFields$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(groups => this.savedGroupFields = groups);
   }
 
   /**
@@ -295,6 +319,11 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.stateService.setSelectedSystemTypeValue(event);
     this.updateSelectedSystemTypeValueIds();
 
+    // Collapse all system accordion sections when system type changes
+    if (this.systemAccordionSections) {
+      this.systemAccordionSections.forEach(section => section.collapse());
+    }
+
     if (this.selectedSystemTypeValueIds.length > 0) {
       this.fieldService.loadAccordionData(
         this.selectedSystemTypeValueIds,
@@ -336,12 +365,14 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
 
     const parentObj = this.getParentFromSystemType();
     this.isEditMode = false;
+    this.isParentArray = false;
 
     this.selectionService.addField(
       field,
       parentObj,
       event?.path || '',
-      this.currentLanguage
+      this.currentLanguage,
+      this.isParentArray
     );
   }
 
@@ -366,6 +397,75 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
       id: this.selectedSystemTypeValue.id || '',
       label: this.selectedSystemTypeValue.label || ''
     };
+  }
+
+  /**
+   * Load saved searches from the server
+   */
+  loadSavedSearches(): void {
+    this.loadingSavedGroups = true;
+    this.searchService.getAllSavedSearches()
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.loadingSavedGroups = false)
+      )
+      .subscribe({
+        next: (response: any) => {
+          if (response && response.groupFields) {
+            console.log('Saved searches loaded:', response);
+            this.stateService.setSavedGroupFields(response);
+          } else {
+            this.stateService.setSavedGroupFields([]);
+          }
+          this.isLoading = false;
+          this.loadingSavedGroups = false;
+
+        },
+        error: (error) => {
+          console.error('Error loading saved searches:', error);
+          this.errorMessage = 'Failed to load saved searches. Please try again later.';
+          this.stateService.setSavedGroupFields([]);
+        }
+      });
+  }
+
+  /**
+   * Handle saved field selection
+   */
+  onSavedFieldSelected(field: SearchCriteria): void {
+    if (!field) return;
+    // First clear existing fields and table data
+    this.selectionService.clearFields();
+    this.isEditMode = true;
+    this.selectionService.addSavedGroupField(field);
+  }
+
+  /**
+   * Handle saved group field title clicked
+   */
+  onSavedGroupFieldTitleClicked(groupField: SearchRequest): void {
+    if (!groupField) return;
+
+    this.selectionService.clearFields();
+    // Check if the title and title.id exists
+    if (groupField.title && groupField.title.id) {
+      this.isEditMode = true;
+      this.searchName = groupField.title.label;
+      this.searchNameId = groupField.title.id;
+    } else {
+      console.log('Saved group field has no title ID');
+    }
+    this.selectionService.addSavedGroup(groupField);
+  }
+
+  // Handle delete field action in relation table
+  onDeleteSelectedField(index: number): void {
+    this.selectionService.deleteField(index);
+  }
+
+  // Handle search action from relation table
+  onSearchSelectedField(event: any): void {
+    console.log('Search for field', event);
   }
 
   /**
@@ -403,8 +503,6 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectedSystemTypeValueIds = [];
     this.fieldService.clearSystemFieldsAccData();
   }
-
-
 
   /**
    * Reset error state
