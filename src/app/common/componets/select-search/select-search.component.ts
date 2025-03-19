@@ -365,12 +365,14 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
 
     const parentObj = this.getParentFromSystemType();
     this.isEditMode = false;
+    this.isParentArray = false;
 
     this.selectionService.addField(
       field,
       parentObj,
       event?.path || '',
-      this.currentLanguage
+      this.currentLanguage,
+      this.isParentArray
     );
   }
 
@@ -492,8 +494,6 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.fieldService.clearSystemFieldsAccData();
   }
 
-
-
   /**
    * Reset error state
    */
@@ -529,6 +529,4 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.loadingSubject.complete();
   }
-
-
 }

@@ -1,4 +1,9 @@
 <div class="selected-fields-table" *ngIf="selectedFields.length > 0">
+    <!-- Error message display -->
+    <div class="error-message" *ngIf="error">
+        {{ error }}
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -10,11 +15,45 @@
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let selected of selectedFields; let i = index">
+            <tr *ngFor="let field of selectedFields; let i = index">
                 <td class="parent">
+                    <!-- Loading indicator -->
+                    <div *ngIf="isLoading" class="loading-indicator">
+                        <span>Loading...</span>
+                    </div>
 
+                    <!-- Parent dropdown -->
+                    <ng-container *ngIf="shouldShowParentDropdown(field) && !isLoading">
+                        <app-table-dropdown [data]="systemTypeData" [isTableView]="false" [multiSelect]="true"
+                            [selectedValues]="getParentSelectedIds(field)" [selectedLanguage]="selectedLanguage"
+                            (selectedValuesChange)="onParentValueChange($event, i)">
+                        </app-table-dropdown>
+
+                        <!-- Validation error -->
+                        <div class="validation-error" *ngIf="field.parentTouched && !isParentValid(field)">
+                            Please select a parent.
+                        </div>
+                    </ng-container>
+
+                    <!-- Display parent label when dropdown shouldn't be shown -->
+                    <ng-container *ngIf="!shouldShowParentDropdown(field) && !isLoading">
+                        {{ field.parent?.label }}
+                    </ng-container>
+                </td>
+
+                <!-- Placeholder for other columns -->
+                <td>{{ field.field?.label }}</td>
+                <td>{{ field.operator?.label }}</td>
+                <td>{{ field.value }}</td>
+                <td>
+                    <!-- Action buttons will go here -->
                 </td>
             </tr>
         </tbody>
     </table>
+</div>
+
+<!-- No data message -->
+<div class="no-data-message" *ngIf="selectedFields.length === 0">
+    No fields selected.
 </div>

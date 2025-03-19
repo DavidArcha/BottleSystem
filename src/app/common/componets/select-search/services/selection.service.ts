@@ -265,9 +265,30 @@ export class SelectionService {
     }
   }
 
-  // Convert saved field to SelectedField format
   private convertSavedFieldToSelectedField(field: SearchCriteria): SelectedField | null {
     if (!field || !field.field) return null;
+
+    // Logic for isParentArray:
+    // 1. If parent has empty ID AND parentSelected has values, isParentArray should be true
+    // 2. If parent has non-empty ID AND parentSelected is empty, isParentArray should be false
+    const hasEmptyParentId = !field.parent?.id;
+    const hasParentSelected = Array.isArray(field.parentSelected) && field.parentSelected.length > 0;
+
+    // Determine isParentArray based on the specific conditions
+    let isParentArray: boolean;
+
+    // Case 1: Empty parent ID and has parentSelected values
+    if (hasEmptyParentId && hasParentSelected) {
+      isParentArray = true;
+    }
+    // Case 2: Non-empty parent ID and empty parentSelected
+    else if (!hasEmptyParentId && !hasParentSelected) {
+      isParentArray = false;
+    }
+    // For other cases, determine based on whether we have multiple parents
+    else {
+      isParentArray = hasParentSelected;
+    }
 
     const selectedField: SelectedField = {
       rowid: field.rowId || '',
@@ -282,7 +303,7 @@ export class SelectionService {
         label: field.operator?.label || ''
       },
       value: field.value || null,
-      // Initialize touched states - already validated since coming from saved data
+      isParentArray: isParentArray,
       parentTouched: true,
       operatorTouched: true,
       valueTouched: true
