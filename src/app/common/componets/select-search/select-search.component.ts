@@ -95,6 +95,15 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.setupSubscriptions();
     this.loadSelectedSystemTypeValuesFromStorage();
+    this.loadSelectedFieldsFromStorage();
+  }
+
+  /**
+  * Load selected fields from storage
+  */
+  private loadSelectedFieldsFromStorage(): void {
+    // This will trigger the selectionService to load and emit the stored selected fields
+    this.selectionService.loadSelectedFieldsFromStorage(this.currentLanguage);
   }
 
   /**

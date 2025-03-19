@@ -1,0 +1,152 @@
+.selected-fields-table {
+    margin-top: 20px;
+    max-height: 200px;
+    /* Limits the visible height of the table */
+    overflow-y: auto;
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+}
+
+.error {
+    border: 1px solid red;
+}
+
+.operator-error,
+.value-error {
+    color: red;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.selected-parent-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 5px;
+
+    .selected-item {
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 0.9em;
+    }
+}
+
+.dual-input-container {
+    display: flex;
+    gap: 8px;
+
+    input {
+        flex: 1;
+    }
+}
+
+input.invalid {
+    border: 1px solid red;
+}
+
+.validation-error {
+    color: #d9534f;
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+
+.parent-dropdown,
+.operator,
+.value {
+    position: relative;
+}
+
+// Style for invalid inputs
+input.ng-touched.ng-invalid,
+.invalid-dropdown {
+    border: 1px solid #d9534f;
+}
+
+// Button styling
+.button-container {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
+.field-button {
+    padding: 6px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: fit-content;
+
+    &:hover {
+        background-color: #e0e0e0;
+    }
+
+    &.selected {
+        background-color: #007bff;
+        color: white;
+        border-color: #0062cc;
+    }
+}
+
+.display-text {
+    padding: 5px;
+    margin-bottom: 5px;
+    background-color: #e8f4ff;
+    border: 1px solid #b8daff;
+    border-radius: 4px;
+    color: #004085;
+    min-height: 20px;
+}
+
+.dual-button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .field-button {
+        margin-right: 0;
+    }
+}
+
+.similar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.similar-field-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.similar-text {
+    font-style: italic;
+    color: #555;
+}
+
+.similar-brand-container {
+    margin-top: 4px;
+}
+
+.dual-dropdown-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}

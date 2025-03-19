@@ -93,7 +93,7 @@ export class SelectionService {
       operatorTouched: false,
       valueTouched: false,
       isParentArray: isParentArray,
-      currentLanguage : currentLanguage,
+      currentLanguage: currentLanguage,
     };
   }
 
@@ -285,8 +285,39 @@ export class SelectionService {
       // Initialize touched states - already validated since coming from saved data
       parentTouched: true,
       operatorTouched: true,
-      valueTouched: true      
+      valueTouched: true
     };
     return selectedField;
+  }
+
+  /**
+  * Load selected fields from storage
+  * @param currentLanguage The current language to use for labels
+  */
+  loadSelectedFieldsFromStorage(currentLanguage: string): void {
+    try {
+      // Get fields from storage service
+      const storedFieldsStr = this.storageService.getItem('selectedFields');
+
+      if (storedFieldsStr) {
+        // Parse the JSON string
+        const storedFields = JSON.parse(storedFieldsStr) as SelectedField[];
+
+        if (storedFields && storedFields.length > 0) {
+          // Update current language for each field
+          const updatedFields = storedFields.map(field => ({
+            ...field,
+            currentLanguage: currentLanguage
+          }));
+
+          // Update the selected fields with the stored values
+          this.selectedFieldsSubject.next(updatedFields);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading selected fields from storage:', error);
+      // In case of error, initialize with empty array
+      this.selectedFieldsSubject.next([]);
+    }
   }
 }
