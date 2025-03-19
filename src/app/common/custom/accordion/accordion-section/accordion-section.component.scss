@@ -1,0 +1,99 @@
+.accordion-section {
+    margin-left: 20px; // Indentation for nested levels
+
+    .loading-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #000;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+    }
+
+    .section-header {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        background-color: #f1f1f1;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 2px;
+
+        &:hover {
+            background-color: #e0e0e0;
+        }
+
+        &:focus {
+            outline: none;
+            background-color: #f0f0f0;
+        }
+
+        .arrow-indicator {
+            margin-right: 8px;
+            transition: transform 0.3s ease;
+
+            &.expanded {
+                transform: rotate(90deg);
+            }
+        }
+
+        .section-title {
+            flex-grow: 1;
+        }
+    }
+
+    .section-content {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        animation: fadeIn 0.3s;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #888;
+    }
+
+    .fields-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+
+            &:hover {
+                text-decoration: underline;
+            }
+
+            &:focus {
+                outline: none;
+                background-color: #f0f0f0;
+            }
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

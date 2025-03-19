@@ -1,0 +1,206 @@
+/**********************************************
+ * Overlay Panel & Backdrop
+ **********************************************/
+
+/* Ensures the overlay panel sits on top of other elements */
+:host ::ng-deep .cdk-overlay-pane {
+    position: absolute !important;
+    z-index: 9999 !important;
+    /* Adjust if needed */
+}
+
+/* Style for the backdrop (if using .transparent-backdrop class) */
+:host ::ng-deep .transparent-backdrop {
+    background: transparent !important;
+}
+
+/**********************************************
+   * Dropdown Container & Toggle
+   **********************************************/
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle {
+    cursor: pointer;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 0.4rem 0.6rem;
+    min-width: 8rem;
+    border-radius: 4px;
+    text-align: left;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dropdown-toggle:focus {
+    outline: none;
+    border-color: #999;
+}
+
+.selected-value {
+    margin-right: auto;
+}
+
+.clear-icon {
+    margin-left: 0.5rem;
+    color: #666;
+    cursor: pointer;
+}
+
+.arrow {
+    margin-left: 0.5rem;
+    border: solid #666;
+    border-width: 0 1px 1px 0;
+    display: inline-block;
+    padding: 3px;
+    transform: rotate(45deg);
+}
+
+.arrow.open {
+    transform: rotate(-135deg);
+}
+
+/**********************************************
+   * Dropdown Content (Rendered in Overlay)
+   **********************************************/
+.dropdown-content {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    min-width: 200px;
+    /* Adjust as needed */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    padding: 0.5rem;
+    font-size: 14px;
+}
+
+/* Search container spacing */
+.search-container {
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.search-box {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    /* Important to include this */
+    margin: 0;
+}
+
+/**********************************************
+   * List View
+   **********************************************/
+.list-view {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 250px;
+    /* Adjust as needed */
+    overflow-y: auto;
+}
+
+.list-item {
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.list-item:hover {
+    background-color: #f1f1f1;
+}
+
+.list-item.selected {
+    background-color: #d7ebff;
+}
+
+.checkbox {
+    margin-right: 0.5rem;
+}
+
+/**********************************************
+   * Table View
+   **********************************************/
+.table-view {
+    width: 100%;
+    border-collapse: collapse;
+    max-height: 250px;
+    /* Keep table from overflowing */
+    overflow-y: auto;
+    /* If you wrap table in a container, ensure it can scroll */
+}
+
+.table-view thead th {
+    background-color: #f8f8f8;
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid #ccc;
+}
+
+.table-view tbody tr {
+    cursor: pointer;
+}
+
+.table-view tbody tr.selected {
+    background-color: #d7ebff;
+}
+
+.table-view td,
+.table-view th {
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+/**********************************************
+   * No Results
+   **********************************************/
+.no-results {
+    padding: 0.5rem;
+    text-align: center;
+    color: #666;
+}
+
+/**********************************************
+   * Search container spacing
+   **********************************************/
+.search-container {
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-box {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.select-all-button {
+    align-self: flex-start;
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.select-all-button:hover {
+    background-color: #e0e0e0;
+}

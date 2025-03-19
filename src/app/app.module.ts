@@ -17,6 +17,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
+import { SelectSearchComponent } from './common/componets/select-search/select-search.component';
+import { AccordionSectionComponent } from './common/custom/accordion/accordion-section/accordion-section.component';
+import { TableDropdownComponent } from './common/custom/dropdowns/table-dropdown/table-dropdown.component';
 
 @NgModule({
   declarations: [
@@ -25,7 +28,10 @@ import { AgGridModule } from 'ag-grid-angular';
     HeaderComponent,
     HomePageComponent,
     ResultPageComponent,
-    SideNavbarComponent
+    SideNavbarComponent,
+    SelectSearchComponent,
+    AccordionSectionComponent,
+    TableDropdownComponent,
   ],
   imports: [
     BrowserModule,

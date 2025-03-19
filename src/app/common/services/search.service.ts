@@ -4,6 +4,7 @@ import { BehaviorSubject, catchError, Observable, of, retry, throwError } from '
 import { AccordionItem } from '../interfaces/accordian-list.interface';
 import { DropdownItem, ListItem } from '../interfaces/table-dropdown.interface';
 import { RestAPICallUrl } from '../utils/apicalls';
+import { DROPDOWN_DATA } from '../utils/dropdown-data.constant';
 
 
 @Injectable({
@@ -60,10 +61,10 @@ export class SearchService {
     return this.http.get<AccordionItem[]>(url);
   }
 
-  // getDropdownData(): Observable<any> {
-  //   // In a more complex scenario, you could load this data from an assets JSON file using HttpClient.
-  //   return of(DROPDOWN_DATA);
-  // }
+  getDropdownData(): Observable<any> {
+    // In a more complex scenario, you could load this data from an assets JSON file using HttpClient.
+    return of(DROPDOWN_DATA);
+  }
 
   saveSearchData(data: any): Observable<any> {
     let url = this.apiUrl + RestAPICallUrl.saveSearchData;

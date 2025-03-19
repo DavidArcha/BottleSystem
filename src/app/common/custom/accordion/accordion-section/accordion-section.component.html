@@ -1,0 +1,49 @@
+<div class="accordion-section">
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="loading-indicator">
+        <span class="spinner"></span>
+    </div>
+
+    <!-- Section header -->
+    <ng-container *ngIf="!isLoading">
+        <ng-container *ngIf="section.children && section.children.length > 0; else fieldTemplate">
+            <div class="section-header" (click)="toggleSection()" (keydown)="onKeyDown($event)" tabindex="0"
+                role="button" [attr.aria-expanded]="isExpanded" [title]="section.label">
+                <span class="arrow-indicator" [class.expanded]="isExpanded">&#9656;</span>
+                <span class="section-title">{{ section.label }}</span>
+            </div>
+        </ng-container>
+
+        <ng-template #fieldTemplate>
+            <div class="section-header" (click)="handleFieldClick(section.id)" (keydown)="onKeyDown($event)"
+                tabindex="0" role="button" [title]="section.label">
+                <span class="section-title">{{ section.label }}</span>
+            </div>
+        </ng-template>
+
+        <!-- Section content shown when expanded -->
+        <div class="section-content" *ngIf="isExpanded" [@expandCollapse]="isExpanded ? 'expanded' : 'collapsed'">
+            <!-- Empty state -->
+            <div *ngIf="!section.children || section.children.length === 0" class="empty-state">
+                No items to display.
+            </div>
+
+            <!-- Render the fields -->
+            <ul class="fields-list" *ngIf="section.children && section.children.length > 0">
+                <ng-container *ngFor="let child of section.children; trackBy: trackByFn">
+                    <li *ngIf="!child.children || child.children.length === 0" (click)="handleFieldClick(child.id)"
+                        (keydown)="onKeyDown($event)" tabindex="0" role="button" [title]="child.label">
+                        {{ child.label }}
+                    </li>
+                    <ng-container *ngIf="child.children && child.children.length > 0">
+                        <app-accordion-section [section]="child"
+                            [parentPath]="parentPath ? parentPath + ' > ' + section.id : section.id"
+                            [defaultExpanded]="defaultExpanded" [isLoading]="isLoading"
+                            (fieldSelected)="onChildFieldSelected($event)">
+                        </app-accordion-section>
+                    </ng-container>
+                </ng-container>
+            </ul>
+        </div>
+    </ng-container>
+</div>
