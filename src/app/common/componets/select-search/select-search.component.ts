@@ -310,6 +310,11 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.stateService.setSelectedSystemTypeValue(event);
     this.updateSelectedSystemTypeValueIds();
 
+    // Collapse all system accordion sections when system type changes
+    if (this.systemAccordionSections) {
+      this.systemAccordionSections.forEach(section => section.collapse());
+    }
+
     if (this.selectedSystemTypeValueIds.length > 0) {
       this.fieldService.loadAccordionData(
         this.selectedSystemTypeValueIds,
