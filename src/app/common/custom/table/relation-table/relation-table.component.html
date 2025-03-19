@@ -36,7 +36,7 @@
 
                     <!-- Display parent label when dropdown shouldn't be shown -->
                     <ng-container *ngIf="!shouldShowParentDropdown(field) && !isLoading">
-                        {{ field.parent?.label }}
+                        {{ (field.parent && field.parent.label) || '' }}
                     </ng-container>
                 </td>
 
@@ -44,15 +44,12 @@
                 <td class="field">{{ getFieldLabel(field) }}</td>
                 <td class="operator">
                     <ng-container *ngIf="!isLoading">
-                        <app-table-dropdown 
-                            [data]="getOperatorDataForField(field, i)" 
-                            [isTableView]="false" 
-                            [multiSelect]="false"
-                            [selectedValues]="getOperatorSelectedIds(field)"
+                        <app-table-dropdown [data]="getOperatorDataForField(field, i)" [isTableView]="false"
+                            [multiSelect]="false" [selectedValues]="getOperatorSelectedIds(field)"
                             [selectedLanguage]="selectedLanguage"
                             (selectedValuesChange)="onOperatorValueChange($event, i)">
                         </app-table-dropdown>
-                        
+
                         <!-- Validation error for operator -->
                         <div class="validation-error" *ngIf="field.operatorTouched && !isOperatorValid(field)">
                             Please select an operator.
