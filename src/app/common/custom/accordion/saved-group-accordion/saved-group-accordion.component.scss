@@ -1,0 +1,67 @@
+:host {
+    display: block;
+}
+
+.accordion-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+.group-title,
+.field-title {
+    cursor: pointer;
+    padding: 5px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+}
+
+.group-title:hover,
+.field-title:hover {
+    background-color: #f5f5f5;
+}
+
+.group-fields {
+    padding-left: 20px;
+}
+
+.fields {
+    padding-left: 40px;
+}
+
+.expanded {
+    transform: rotate(90deg);
+}
+
+.save-icon {
+    margin-left: 5px;
+}
+
+.context-menu {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.context-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.context-menu li {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.context-menu li:hover {
+    background-color: #f5f5f5;
+}
+
+.selected {
+    background-color: #d3d3d3;
+}
