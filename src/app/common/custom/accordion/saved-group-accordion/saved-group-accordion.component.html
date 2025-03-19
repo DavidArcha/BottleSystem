@@ -1,28 +1,50 @@
 <div class="accordion-container">
-    <div *ngFor="let group of groups" class="group">
-        <div class="group-title">
-            <span [class.expanded]="expandedGroups.has(group.groupTitle?.id || 'default')"
-                (click)="toggleGroup(group.groupTitle?.id || 'default')">&#9656;</span>
-            <span class="save-icon" (click)="toggleGroup(group.groupTitle?.id || 'default')">💾</span>
-            {{ group.groupTitle?.label || 'Saved Groups' }}
-        </div>
-        <div *ngIf="expandedGroups.has(group.groupTitle?.id || 'default')" class="group-fields">
-            <div *ngFor="let fieldGroup of group.groupFields || []" class="field-group">
-                <div class="field-title" (contextmenu)="onGroupFieldTitleRightClick($event, fieldGroup)">
-                    <span [class.expanded]="expandedFields.has(fieldGroup.title?.id || 'unnamed')"
-                        (click)="toggleField(fieldGroup.title?.id || 'unnamed')">&#9656;</span>
-                    <span class="save-icon" (click)="toggleField(fieldGroup.title?.id || 'unnamed')">💾</span>
-                    <a href="#" (click)="onGroupFieldTitleClick(fieldGroup, $event); $event.preventDefault();">
-                        {{ fieldGroup.title?.label || fieldGroup.title?.title || 'Unnamed Group' }}
-                    </a>
-                </div>
-                <div *ngIf="expandedFields.has(fieldGroup.title?.id || 'unnamed')" class="fields">
-                    <div *ngFor="let field of fieldGroup.fields || []" class="field" [title]="getFieldTitle(field)"
-                        [class.selected]="isFieldSelected(field)">
-                        <span class="save-icon">💾</span>
-                        <a href="#" (click)="onFieldClick(field, $event); $event.preventDefault();">
-                            {{ getFieldLabel(field) }}
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <span>Loading saved groups...</span>
+    </div>
+
+    <!-- Error state -->
+    <div *ngIf="hasError" class="error-container">
+        <div class="error-icon">⚠️</div>
+        <span>{{ errorMessage || 'An error occurred loading saved groups' }}</span>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!isLoading && groups.length === 0" class="empty-container">
+        <div class="empty-icon">📂</div>
+        <span>No saved groups found</span>
+    </div>
+
+    <!-- Groups content -->
+    <div *ngIf="!isLoading && groups.length > 0">
+        <div *ngFor="let group of groups; trackBy: trackByGroupId" class="group">
+            <div class="group-title">
+                <span [class.expanded]="expandedGroups.has(group.groupTitle?.id || 'default')"
+                    (click)="toggleGroup(group.groupTitle?.id || 'default')">&#9656;</span>
+                <span class="save-icon" (click)="toggleGroup(group.groupTitle?.id || 'default')">💾</span>
+                {{ group.groupTitle?.label || 'Saved Groups' }}
+            </div>
+            <div *ngIf="expandedGroups.has(group.groupTitle?.id || 'default')" class="group-fields">
+                <div *ngFor="let fieldGroup of group.groupFields || []; trackBy: trackByFieldGroupId"
+                    class="field-group">
+                    <div class="field-title" (contextmenu)="onGroupFieldTitleRightClick($event, fieldGroup)">
+                        <span [class.expanded]="expandedFields.has(fieldGroup.title?.id || 'unnamed')"
+                            (click)="toggleField(fieldGroup.title?.id || 'unnamed')">&#9656;</span>
+                        <span class="save-icon" (click)="toggleField(fieldGroup.title?.id || 'unnamed')">💾</span>
+                        <a href="#" (click)="onGroupFieldTitleClick(fieldGroup, $event); $event.preventDefault();">
+                            {{ fieldGroup.title?.label || fieldGroup.title?.title || 'Unnamed Group' }}
                         </a>
+                    </div>
+                    <div *ngIf="expandedFields.has(fieldGroup.title?.id || 'unnamed')" class="fields">
+                        <div *ngFor="let field of fieldGroup.fields || []; trackBy: trackByFieldId" class="field"
+                            [title]="getFieldTitle(field)" [class.selected]="isFieldSelected(field)">
+                            <span class="save-icon">💾</span>
+                            <a href="#" (click)="onFieldClick(field, $event); $event.preventDefault();">
+                                {{ getFieldLabel(field) }}
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

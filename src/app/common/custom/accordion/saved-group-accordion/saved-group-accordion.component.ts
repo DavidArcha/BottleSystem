@@ -1,24 +1,10 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, HostListener, ElementRef } from '@angular/core';
-import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, HostListener, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Subject } from 'rxjs';
+import { takeUntil, debounceTime } from 'rxjs/operators';
 import { SearchCriteria } from '../../../interfaces/search-criteria.interface';
 import { SearchRequest } from '../../../interfaces/search-request.interface';
-
-// This interface is still needed as it represents the unique identifier structure
-interface FieldIdentifier {
-  uniqueId?: string;
-  fieldId?: string;
-  operatorId?: string;
-  value?: any;
-  field?: string;
-  operator?: string;
-}
-
-// This state interface is essential for storing accordion state
-interface AccordionState {
-  expandedGroups: string[];
-  expandedFields: string[];
-  selectedField: FieldIdentifier | null;
-}
+import { SavedGroupService } from '../services/saved-group.service';
+import { SavedGroupStateService } from '../services/saved-group-state.service';
 
 @Component({
   selector: 'app-saved-group-accordion',
@@ -27,271 +13,188 @@ interface AccordionState {
   styleUrl: './saved-group-accordion.component.scss'
 })
 export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
+  private _groups: any[] = [];
+  private destroy$ = new Subject<void>();
+
   @Input() set groups(value: SearchRequest[] | any[] | any) {
-    this._groups = this.processGroups(value);
+    this._groups = this.savedGroupService.processGroups(value);
+
+    // Update the selected field based on the updated groups
+    const savedState = this.savedGroupService.getState();
+    if (savedState?.selectedField) {
+      this.selectedField = this.stateService.findField(savedState.selectedField, this._groups);
+    }
+
+    this.cdr.markForCheck();
   }
 
   get groups(): any[] {
     return this._groups;
   }
 
-  private _groups: any[] = [];
   @Input() selectedField: SearchCriteria | any = null;
   @Output() fieldSelected = new EventEmitter<SearchCriteria>();
   @Output() groupFieldTitleClicked = new EventEmitter<SearchRequest>();
-  // Add these two new outputs
   @Output() editGroupFieldTitle = new EventEmitter<SearchRequest>();
   @Output() deleteGroupFieldTitle = new EventEmitter<SearchRequest>();
 
+  // State variables
   expandedGroups: Set<string> = new Set();
   expandedFields: Set<string> = new Set();
+  isLoading = false;
+  hasError = false;
+  errorMessage: string | null = null;
+
+  // Context menu properties
+  contextMenuVisible = false;
+  contextMenuPosition = { x: 0, y: 0 };
   selectedFieldGroup: any = null;
 
-  contextMenuVisible: boolean = false;
-  contextMenuPosition = { x: 0, y: 0 };
+  constructor(
+    private elementRef: ElementRef,
+    private cdr: ChangeDetectorRef,
+    private savedGroupService: SavedGroupService,
+    private stateService: SavedGroupStateService
+  ) { }
 
-  // Performance optimization variables
-  private debounceTimer: any;
-  private saveStateTimer: any;
-  private lastGroupsInput: any[] | null = null;
-  private processedGroupsCache: any[] | null = null;
-
-  constructor(private elementRef: ElementRef) { }
-
-  ngOnInit() {
-    this.restoreState();
-  }
-
-  ngOnDestroy() {
-    clearTimeout(this.debounceTimer);
-    clearTimeout(this.saveStateTimer);
-    this.lastGroupsInput = null;
-    this.processedGroupsCache = null;
-  }
-
-  // Process incoming groups data with minimal transformation
-  private processGroups(input: any[] | any): any[] {
-    console.log('Processing groups input:', input);
-
-    if (!input) return [];
-
-    // Return cached result if input hasn't changed
-    if (this.lastGroupsInput === input && this.processedGroupsCache) {
-      return this.processedGroupsCache;
-    }
-
-    let result: any[] = [];
-
-    // Check if input is the JSON structure with groupTitle and groupFields directly
-    // (not in an array)
-    if (!Array.isArray(input) && input.groupTitle && Array.isArray(input.groupFields)) {
-      console.log('Detected JSON structure with groupTitle and groupFields');
-      // Create a single group with the provided groupTitle and groupFields
-      result = [{
-        groupTitle: input.groupTitle,
-        groupFields: input.groupFields
-      }];
-    } else {
-      // Process as array input (existing implementation)
-      const inputArray = Array.isArray(input) ? input : [input];
-      result = inputArray.map(group => {
-        // Create a shallow copy to avoid modifying the original
-        const processedGroup = { ...group };
-
-        // If we have groupTitle, use it, otherwise use title if available
-        if (!processedGroup.groupTitle && processedGroup.title) {
-          processedGroup.groupTitle = processedGroup.title;
-        }
-
-        // If still no groupTitle, create a default one
-        if (!processedGroup.groupTitle) {
-          processedGroup.groupTitle = {
-            id: 'default-group',
-            label: 'Saved Groups'
-          };
-        }
-
-        // If we have groupFields, use it, otherwise use fields array directly
-        if (!processedGroup.groupFields) {
-          // Check if "fields" property exists and is an array
-          if (Array.isArray(processedGroup.fields)) {
-            // These are likely the individual search criteria items
-            // We need to wrap them in a "groupField" structure for rendering
-            processedGroup.groupFields = [{
-              title: {
-                id: 'default-field-group',
-                label: 'Search Criteria'
-              },
-              fields: processedGroup.fields.map((field: any, index: number) => {
-                // Add a unique ID for tracking
-                return {
-                  ...field,
-                  _uniqueId: `field_default_${index}`
-                };
-              })
-            }];
-          } else {
-            // Default to empty array if no fields found
-            processedGroup.groupFields = [];
-          }
-        } else {
-          // We already have groupFields, just ensure uniqueIds for fields
-          processedGroup.groupFields = processedGroup.groupFields.map((fieldGroup: any, groupIndex: number) => {
-            // Make a copy to avoid modifying original
-            const processedFieldGroup = { ...fieldGroup };
-
-            // Ensure title exists
-            if (!processedFieldGroup.title) {
-              processedFieldGroup.title = {
-                id: `group-${groupIndex}`,
-                label: `Group ${groupIndex + 1}`
-              };
-            }
-
-            // Ensure fields array exists
-            if (!Array.isArray(processedFieldGroup.fields)) {
-              processedFieldGroup.fields = [];
-            } else {
-              // Add unique IDs to fields
-              processedFieldGroup.fields = processedFieldGroup.fields.map((field: any, fieldIndex: number) => {
-                return {
-                  ...field,
-                  // Use rowId if available, otherwise generate a unique ID
-                  _uniqueId: field.rowId || `field_${processedGroup.groupTitle?.id || 'default'}_${groupIndex}_${fieldIndex}`
-                };
-              });
-            }
-
-            return processedFieldGroup;
-          });
-        }
-
-        return processedGroup;
+  ngOnInit(): void {
+    // Subscribe to state changes
+    this.stateService.expandedGroups$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(groups => {
+        this.expandedGroups = groups;
+        this.cdr.markForCheck();
       });
-    }
 
-    console.log('Processed groups result:', result);
+    this.stateService.expandedFields$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(fields => {
+        this.expandedFields = fields;
+        this.cdr.markForCheck();
+      });
 
-    // Cache results
-    this.lastGroupsInput = input;
-    this.processedGroupsCache = result;
+    this.stateService.selectedField$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(field => {
+        if (field && field !== this.selectedField) {
+          this.selectedField = field;
+          this.cdr.markForCheck();
+        }
+      });
 
-    return result;
+    this.stateService.isLoading$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(loading => {
+        this.isLoading = loading;
+        this.cdr.markForCheck();
+      });
+
+    this.stateService.hasError$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(hasError => {
+        this.hasError = hasError;
+        this.cdr.markForCheck();
+      });
+
+    this.stateService.errorMessage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(message => {
+        this.errorMessage = message;
+        this.cdr.markForCheck();
+      });
   }
 
-  toggleGroup(groupId: string) {
-    console.log('Toggling group:', groupId);
-    if (!groupId) return; // Skip if invalid ID
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.savedGroupService.clearCache();
+  }
 
-    let isExpanded: boolean;
-    if (this.expandedGroups.has(groupId)) {
-      this.expandedGroups.delete(groupId);
-      isExpanded = false;
-
-      // When collapsing a group, also collapse all child fields
-      // Find all field groups belonging to this group and collapse them
-      const group = this.groups.find(g => (g.groupTitle?.id || 'default') === groupId);
-      if (group && group.groupFields) {
-        group.groupFields.forEach((fieldGroup: any) => {
-          const fieldGroupId = fieldGroup.title?.id || 'unnamed';
-          // Remove any expanded fields for this field group
-          if (this.expandedFields.has(fieldGroupId)) {
-            this.expandedFields.delete(fieldGroupId);
-          }
-        });
-      }
-    } else {
-      this.expandedGroups.add(groupId);
-      isExpanded = true;
-    }
-
-    this.saveState();
+  /**
+   * Toggle a group's expanded state
+   */
+  toggleGroup(groupId: string): void {
+    this.stateService.toggleGroup(groupId, this.groups);
     this.contextMenuVisible = false;
   }
 
-  toggleField(fieldGroupId: string) {
-    if (!fieldGroupId) return; // Skip if invalid ID
-
-    if (this.expandedFields.has(fieldGroupId)) {
-      this.expandedFields.delete(fieldGroupId);
-    } else {
-      this.expandedFields.add(fieldGroupId);
-    }
-    this.saveState();
+  /**
+   * Toggle a field's expanded state
+   */
+  toggleField(fieldGroupId: string): void {
+    this.stateService.toggleField(fieldGroupId);
     this.contextMenuVisible = false;
   }
 
+  /**
+   * Handle click on a field
+   */
   onFieldClick(field: SearchCriteria, event: Event): void {
     event.preventDefault();
     this.contextMenuVisible = false;
     this.selectedField = field;
+    this.stateService.selectField(field);
     this.fieldSelected.emit(field);
-    this.saveState();
   }
 
+  /**
+   * Handle click on a group field title
+   */
   onGroupFieldTitleClick(fieldGroup: SearchRequest, event: Event): void {
     event.preventDefault();
     this.contextMenuVisible = false;
     this.groupFieldTitleClicked.emit(fieldGroup);
-    this.saveState();
   }
 
-  onGroupFieldTitleRightClick(event: MouseEvent, fieldGroup: any) {
+  /**
+   * Handle right-click on a group field title
+   */
+  onGroupFieldTitleRightClick(event: MouseEvent, fieldGroup: any): void {
     event.preventDefault();
     this.contextMenuVisible = true;
-    // Position the context menu relative to the clicked element
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
 
-    // Option 1: Position menu below the element
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
     this.contextMenuPosition = {
       x: rect.left,
       y: rect.bottom
     };
+
     this.selectedFieldGroup = fieldGroup;
+    this.cdr.markForCheck();
   }
 
   /**
- * Collapses all groups and fields in the accordion
- * This will close everything regardless of current expand state
- */
+   * Collapse all groups and fields
+   */
   public collapseAll(): void {
-    // Clear all expanded groups and fields
-    this.expandedGroups.clear();
-    this.expandedFields.clear();
-
-    // Save the updated state
-    this.saveState();
-
-    // Close any open context menu
+    this.stateService.reset();
     this.contextMenuVisible = false;
+    this.cdr.markForCheck();
   }
 
-  onEditGroupFieldTitle() {
+  /**
+   * Handle click on edit option in context menu
+   */
+  onEditGroupFieldTitle(): void {
     if (this.selectedFieldGroup) {
-      const title = this.selectedFieldGroup.title && typeof this.selectedFieldGroup.title === 'object'
-        ? this.selectedFieldGroup.title.title || this.selectedFieldGroup.title.label
-        : String(this.selectedFieldGroup.title || '');
-      // Emit the event with the selected group
       this.editGroupFieldTitle.emit(this.selectedFieldGroup);
     }
     this.contextMenuVisible = false;
   }
 
-  onDeleteGroupFieldTitle() {
+  /**
+   * Handle click on delete option in context menu
+   */
+  onDeleteGroupFieldTitle(): void {
     if (this.selectedFieldGroup) {
-      const title = this.selectedFieldGroup.title && typeof this.selectedFieldGroup.title === 'object'
-        ? this.selectedFieldGroup.title.title || this.selectedFieldGroup.title.label
-        : String(this.selectedFieldGroup.title || '');
-      // Emit the event with the selected group
       this.deleteGroupFieldTitle.emit(this.selectedFieldGroup);
     }
     this.contextMenuVisible = false;
   }
 
-  onGroupRightClick(event: MouseEvent, group: any) {
-    event.preventDefault();
-  }
-
+  /**
+   * Get the tooltip title for a field
+   */
   getFieldTitle(field: SearchCriteria | any): string {
     if (!field) return '';
 
@@ -301,9 +204,13 @@ export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
     } else if (typeof field.field === 'string' && typeof field.operator === 'string') {
       return `${field.field} ${field.operator} ${field.value || ''}`;
     }
+
     return '';
   }
 
+  /**
+   * Get the display label for a field
+   */
   getFieldLabel(field: SearchCriteria | any): string {
     if (!field) return '';
 
@@ -313,182 +220,92 @@ export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
     } else if (typeof field.field === 'string' && typeof field.operator === 'string') {
       return `${field.field} ${field.operator} ${field.value || ''}`;
     }
+
     return field.id || '';
   }
 
+  /**
+   * Check if a field is selected
+   */
   isFieldSelected(field: SearchCriteria | any): boolean {
     if (!this.selectedField || !field) return false;
 
-    // First check - use rowId for comparison if available (most unique identifier)
-    if (field.rowId && this.selectedField.rowId) {
-      return field.rowId === this.selectedField.rowId;
-    }
-
-    // Second check - use the unique ID that we added during processing
+    // Use unique ID first
     if (field._uniqueId && this.selectedField._uniqueId) {
       return field._uniqueId === this.selectedField._uniqueId;
     }
 
-    // Third check - compare as objects based on reference identity
-    // This ensures only the exact same object instance is considered selected
+    // Use rowId if available
+    if (field.rowId && this.selectedField.rowId) {
+      return field.rowId === this.selectedField.rowId;
+    }
+
+    // Use reference equality as a last resort
     return Object.is(field, this.selectedField);
-
-    // Remove the property-based comparison that was causing multiple selections
-    // when fields had the same values
   }
 
-  saveState() {
-    // Clear any pending save operation
-    clearTimeout(this.saveStateTimer);
-
-    // Debounce save operations to avoid excessive localStorage writes
-    this.saveStateTimer = setTimeout(() => {
-      const state: AccordionState = {
-        expandedGroups: Array.from(this.expandedGroups),
-        expandedFields: Array.from(this.expandedFields),
-        selectedField: this.selectedField
-          ? this.getSelectedFieldIdentifier(this.selectedField)
-          : null
-      };
-
-      try {
-        const stateJson = JSON.stringify(state);
-        localStorage.setItem('savedAccordionState', stateJson);
-      } catch (err) {
-        console.error('Error saving accordion state:', err);
-      }
-    }, 300);
-  }
-
-  getSelectedFieldIdentifier(field: SearchCriteria | any): FieldIdentifier {
-    // Include the unique ID if available
-    if (field._uniqueId) {
-      return { uniqueId: field._uniqueId };
-    }
-
-    // Create a simplified identifier that can be used to find the field later
-    if (field.field?.id) {
-      return {
-        fieldId: field.field.id,
-        operatorId: field.operator?.id,
-        value: field.value
-      };
-    } else {
-      return {
-        field: field.field,
-        operator: field.operator,
-        value: field.value
-      };
-    }
-  }
-
-  restoreState() {
-    const stored = localStorage.getItem('savedAccordionState');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as AccordionState;
-        if (parsed.expandedGroups) {
-          this.expandedGroups = new Set<string>(parsed.expandedGroups);
-        }
-        if (parsed.expandedFields) {
-          this.expandedFields = new Set<string>(parsed.expandedFields);
-        }
-        if (parsed.selectedField) {
-          this.selectedField = this.findFieldObject(parsed.selectedField);
-        }
-      } catch (err) {
-        console.error('Error restoring state', err);
-      }
-    }
-  }
-
-  findFieldObject(savedField: FieldIdentifier): any {
-    if (!this.groups || !savedField) return savedField;
-
-    // Try to find by unique ID first if available
-    if (savedField.uniqueId) {
-      for (const g of this.groups) {
-        for (const fg of g.groupFields || []) {
-          for (const f of fg.fields || []) {
-            if (f._uniqueId === savedField.uniqueId) {
-              return f;
-            }
-          }
-        }
-      }
-    }
-
-    // Fall back to previous field finding logic
-    for (const g of this.groups) {
-      for (const fg of g.groupFields || []) {
-        for (const f of fg.fields || []) {
-          const fieldIdMatch = savedField.fieldId && f.field?.id === savedField.fieldId &&
-            (!savedField.operatorId || f.operator?.id === savedField.operatorId) &&
-            (!savedField.value || f.value === savedField.value);
-
-          if (fieldIdMatch) return f;
-
-          const fieldLabelMatch = savedField.field &&
-            ((typeof f.field === 'string' && f.field === savedField.field) ||
-              (f.field?.label === savedField.field)) &&
-            ((typeof f.operator === 'string' && f.operator === savedField.operator) ||
-              (f.operator?.label === savedField.operator)) &&
-            (!savedField.value || f.value === savedField.value);
-
-          if (fieldLabelMatch) return f;
-        }
-      }
-    }
-    return savedField;
-  }
-
+  /**
+   * Clear the selected field
+   */
   clearSelectedField(): void {
-    this.selectedField = null;
-    this.saveState();
+    this.stateService.clearSelectedField();
   }
 
+  /**
+   * Reset the accordion to its initial state
+   */
+  public reset(): void {
+    this.stateService.reset();
+    this.contextMenuVisible = false;
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Close context menu when clicking outside
+   */
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
-    // If context menu isn't visible, no need to do anything
-    if (!this.contextMenuVisible) return;
-
-    // Get the context menu element
-    const contextMenu = this.elementRef.nativeElement.querySelector('.context-menu');
-
-    // Check if the click was outside the context menu
-    if (contextMenu && !contextMenu.contains(event.target as Node)) {
-      this.contextMenuVisible = false;
-    }
-  }
-
-  @HostListener('document:contextmenu', ['$event'])
-  onDocumentRightClick(event: MouseEvent) {
-    // Similar logic for right-click
+  onDocumentClick(event: MouseEvent): void {
     if (!this.contextMenuVisible) return;
 
     const contextMenu = this.elementRef.nativeElement.querySelector('.context-menu');
     if (contextMenu && !contextMenu.contains(event.target as Node)) {
       this.contextMenuVisible = false;
+      this.cdr.markForCheck();
     }
   }
 
   /**
- * Reset the accordion to its initial state
- * Collapses all groups and clears selections
+   * Close context menu on right-click outside
+   */
+  @HostListener('document:contextmenu', ['$event'])
+  onDocumentRightClick(event: MouseEvent): void {
+    if (!this.contextMenuVisible) return;
+
+    const contextMenu = this.elementRef.nativeElement.querySelector('.context-menu');
+    if (contextMenu && !contextMenu.contains(event.target as Node)) {
+      this.contextMenuVisible = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  /**
+ * Track groups by ID for ngFor
  */
-  public reset(): void {
-    // Clear expanded groups and fields
-    this.expandedGroups.clear();
-    this.expandedFields.clear();
+  trackByGroupId(index: number, group: any): string {
+    return group.groupTitle?.id || `group_${index}`;
+  }
 
-    // Clear selected field
-    this.selectedField = null;
-    this.selectedFieldGroup = null;
+  /**
+   * Track field groups by ID for ngFor
+   */
+  trackByFieldGroupId(index: number, fieldGroup: any): string {
+    return fieldGroup.title?.id || `field_group_${index}`;
+  }
 
-    // Close any open context menu
-    this.contextMenuVisible = false;
-
-    // Remove saved state from localStorage
-    localStorage.removeItem('savedAccordionState');
+  /**
+   * Track fields by ID for ngFor
+   */
+  trackByFieldId(index: number, field: any): string {
+    return field._uniqueId || field.rowId || `field_${index}`;
   }
 }
