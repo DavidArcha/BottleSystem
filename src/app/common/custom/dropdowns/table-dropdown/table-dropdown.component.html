@@ -1,0 +1,88 @@
+<div class="dropdown-container">
+    <button #dropdownToggle class="dropdown-toggle" type="button" [attr.aria-expanded]="isOpen"
+        [attr.aria-haspopup]="isTableView ? 'grid' : 'listbox'" [attr.aria-labelledby]="dropdownId + '-label'"
+        (click)="toggleDropdown()">
+        <span id="{{ dropdownId }}-label" class="selected-value">{{ getDisplayText() }}</span>
+
+        <span *ngIf="(multiSelect ? selectedOptions.length > 0 : selectedValues.length > 0)" class="clear-icon"
+            role="button" tabindex="0" aria-label="Clear selection" (click)="clearSelection($event)"
+            (keydown.enter)="clearSelection($event)" (keydown.space)="clearSelection($event)">✖</span>
+
+        <span class="arrow" [ngClass]="{ 'open': isOpen }"></span>
+    </button>
+
+    <!-- Add template with reference needed for overlay -->
+    <ng-template #dropdownTemplate>
+        <div class="dropdown-content" [attr.id]="dropdownId + '-dropdown'"
+            [attr.role]="isTableView ? 'grid' : 'listbox'" [attr.aria-multiselectable]="multiSelect">
+
+            <!-- Search Box - Now mandatory -->
+            <div class="search-container">
+                <input type="text" class="search-box" [placeholder]="getSearchPlaceholder()"
+                    aria-label="Search dropdown options" [(ngModel)]="searchTerm" (input)="onSearchChange()"
+                    (click)="$event.stopPropagation()">
+
+                <!-- Add Select All / Unselect All button -->
+                <button *ngIf="multiSelect" type="button" class="select-all-button"
+                    (click)="$event.stopPropagation(); toggleSelectAll()">
+                    {{ isAllSelected() ? 'Unselect All' : 'Select All' }} ({{ isAllSelected() ? selectedOptions.length :
+                    filteredData.length }})
+                </button>
+            </div>
+
+            <!-- List View -->
+            <ul *ngIf="!isTableView" class="list-view">
+                <li *ngFor="let item of filteredData; let i = index" class="list-item"
+                    [class.selected]="isSelected(item)" [attr.role]="'option'" [attr.aria-selected]="isSelected(item)"
+                    [attr.id]="dropdownId + '-option-' + i" tabindex="0" (click)="selectOption(item)"
+                    (keydown.enter)="selectOption(item)" (keydown.space)="selectOption(item)">
+                    <span *ngIf="multiSelect" class="checkbox">
+                        <input type="checkbox" [checked]="isSelected(item)"
+                            [attr.aria-labelledby]="dropdownId + '-option-' + i"
+                            (click)="$event.stopPropagation(); selectOption(item)">
+                    </span>
+                    {{ getDisplayLabel(item) }}
+                </li>
+            </ul>
+
+            <!-- Table View -->
+            <table *ngIf="isTableView" class="table-view" [attr.role]="'grid'">
+                <thead>
+                    <tr>
+                        <th *ngIf="multiSelect" scope="col">
+                            <input type="checkbox"
+                                [checked]="selectedOptions.length === filteredData.length && filteredData.length > 0"
+                                [disabled]="filteredData.length === 0" aria-label="Select all items"
+                                (change)="toggleSelectAll()">
+                        </th>
+                        <th *ngFor="let header of getTableHeaders()" scope="col">{{ header }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of filteredData; let i = index" [class.selected]="isSelected(item)"
+                        [attr.role]="'row'" tabindex="0" [attr.aria-selected]="isSelected(item)"
+                        (click)="selectOption(item)" (keydown.enter)="selectOption(item)"
+                        (keydown.space)="selectOption(item)">
+                        <td *ngIf="multiSelect">
+                            <input type="checkbox" [checked]="isSelected(item)"
+                                [attr.aria-label]="'Select ' + getDisplayLabel(item)"
+                                (click)="$event.stopPropagation(); selectOption(item)">
+                        </td>
+                        <td *ngFor="let column of getTableHeaders()">
+                            {{ getTableCellValue(item, column) }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <!-- No results message -->
+            <div *ngIf="filteredData.length === 0" class="no-results">
+                {{ selectedLanguage === 'de' ? 'Keine Ergebnisse gefunden' : 'No results found' }}
+            </div>
+        </div>
+    </ng-template>
+
+    <!-- Keep this for backward compatibility if needed -->
+    <div *ngIf="false && isOpen" class="dropdown-content-legacy">
+        <!-- Legacy content - this won't be used anymore -->
+    </div>
+</div>

@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { AccordionService } from './accordion.service';
+import { SelectionService } from './selection.service';
 
-describe('AccordionService', () => {
-  let service: AccordionService;
+describe('SelectionService', () => {
+  let service: SelectionService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(AccordionService);
+    service = TestBed.inject(SelectionService);
   });
 
   it('should be created', () => {

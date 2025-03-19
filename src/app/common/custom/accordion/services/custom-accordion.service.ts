@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
+import { AccordionItem } from '../../../interfaces/accordian-list.interface';
 import { BehaviorSubject } from 'rxjs';
-import { AccordionItem } from '../interfaces/accordian-list.interface';
 
 @Injectable({
   providedIn: 'root'
 })
-export class AccordionService {
+export class CustomAccordionService {
   private accordionDataCache: { [lang: string]: AccordionItem[] } = {};
   private expandedStateCache: { [id: string]: boolean } = {};
 

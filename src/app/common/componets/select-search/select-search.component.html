@@ -1,0 +1,52 @@
+<div class="simple-search">
+    <!-- Add the checkbox here -->
+    <div class="toggle-group-data">
+        <label>
+            <input type="checkbox" [(ngModel)]="showGroupDataOutside" />
+            Show Group Data
+        </label>
+    </div>
+
+    <!-- Existing code... -->
+    <div class="first-accordion-section">
+        <!-- Accordion sections with trackBy for performance -->
+        <app-accordion-section #firstAccordion *ngFor="let section of firstSystemFieldsData; trackBy: trackByFn"
+            [section]="section" [parentPath]="''" [isLoading]="isLoading" [sectionType]="'first'"
+            (fieldSelected)="onFirstAccFieldSelected($event)">
+        </app-accordion-section>
+    </div>
+    <!-- Loading indicator for system types -->
+    <div *ngIf="loadingSystemTypes" class="loading-indicator">
+        <span>Loading system types...</span>
+    </div>
+
+    <!-- Dropdown section -->
+    <div class="dropdown-section">
+        <div class="dropdown-section">
+            <app-table-dropdown #systemTypeDropdown [data]="systemTypeData" [isTableView]="false"
+                [selectedValues]="selectedSystemTypeValueIds" [selectedLanguage]="currentLanguage" [multiSelect]="false"
+                (selectedValuesChange)="onSelectedSystemTypeValueChange($event)">
+            </app-table-dropdown>
+        </div>
+    </div>
+
+    <!-- Loading indicator for accordion data -->
+    <div *ngIf="isLoading" class="loading-indicator">
+        <span>Loading fields...</span>
+    </div>
+
+    <!-- Accordion sections with trackBy for performance -->
+    <app-accordion-section #systemAccordion *ngFor="let section of systemFieldsAccData; trackBy: trackByFn"
+        [section]="section" [parentPath]="''" [isLoading]="isLoading" [sectionType]="'system'"
+        (fieldSelected)="onFieldSelected($event)">
+    </app-accordion-section>
+
+
+
+    <div class="action-buttons">
+        <button [disabled]="selectedFields.length === 0" (click)="clearTable()">Clear</button>
+        <button [disabled]="selectedFields.length === 0">Search</button>
+        <button [disabled]="selectedFields.length === 0">Save</button>
+    </div>
+
+</div>
