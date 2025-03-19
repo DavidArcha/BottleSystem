@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { SelectedField } from '../../../interfaces/selectedFields.interface';
 import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
@@ -6,6 +6,9 @@ import { SearchService } from '../../../services/search.service';
 import { LanguageService } from '../../../services/language.service';
 import { RelationTableService } from '../services/relation-table.service';
 import { FieldServiceService } from '../../../componets/select-search/services/field-service.service';
+import { FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
+import { DropdownDataService } from '../services/dropdown-data.service';
+import { OperatorTableService } from '../services/operator-table.service';
 
 @Component({
   selector: 'app-relation-table',
@@ -13,20 +16,27 @@ import { FieldServiceService } from '../../../componets/select-search/services/f
   templateUrl: './relation-table.component.html',
   styleUrl: './relation-table.component.scss'
 })
-export class RelationTableComponent {
+export class RelationTableComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   @Input() selectedFields: SelectedField[] = [];
   @Input() selectedLanguage: string = 'de';
   @Output() parentValueChange = new EventEmitter<{ selectedValues: DropdownItem[], index: number }>();
+  @Output() operatorValueChange = new EventEmitter<{ selectedValue: DropdownItem, index: number }>();
 
   systemTypeData: DropdownItem[] = [];
   isLoading = false;
   error = '';
 
+  // Cache for operator data by field type
+  private operatorDataCache: { [fieldType: string]: DropdownItem[] } = {};
+
   constructor(
     private relationTableService: RelationTableService,
-    private languageService: LanguageService, private fieldService: FieldServiceService
+    private languageService: LanguageService,
+    private fieldService: FieldServiceService,
+    private dropdownDataService: DropdownDataService,
+    private operatorTableService: OperatorTableService
   ) { }
 
   ngOnInit(): void {
@@ -39,6 +49,7 @@ export class RelationTableComponent {
       .subscribe(lang => {
         this.selectedLanguage = lang;
         this.loadSystemTypeFields();
+        this.clearOperatorDataCache(); // Clear cache on language change
       });
 
     // Load initial data
@@ -61,15 +72,28 @@ export class RelationTableComponent {
   }
 
   /**
-   * Initialize fields with default values if needed
-   */
+ * Initialize fields with default values if needed
+ */
   private initializeFields(): void {
     this.selectedFields.forEach(field => {
       // Ensure parentSelected is initialized if isParentArray is true
       if (field.isParentArray === true && !field.parentSelected) {
         field.parentSelected = [];
       }
+      // Always ensure operator is initialized
+      field.operator = field.operator || { id: '', label: '' };
+      // Always ensure operatorTouched is initialized
+      field.operatorTouched = field.operatorTouched !== undefined ? field.operatorTouched : false;
+      // Always ensure parentTouched is initialized
+      field.parentTouched = field.parentTouched !== undefined ? field.parentTouched : false;
     });
+  }
+
+  /**
+   * Clear operator data cache (used when language changes)
+   */
+  private clearOperatorDataCache(): void {
+    this.operatorDataCache = {};
   }
 
   /**
@@ -130,6 +154,133 @@ export class RelationTableComponent {
           console.error('Error loading system type fields:', err);
         }
       });
+  }
+
+  /**
+   * Get field type for a selected field
+   */
+  getFieldType(field: SelectedField): string {
+    if (!field.field || !field.field.id) return 'string'; // Default to string
+
+    const fieldId = field.field.id;
+
+    // Check field type mapping
+    for (const [key, value] of Object.entries(FieldTypeMapping)) {
+      if (key.includes(fieldId)) {
+        // Map FieldType enum to string type
+        switch (value) {
+          case FieldType.Bool:
+            return 'boolean';
+          case FieldType.Number:
+            return 'number';
+          case FieldType.Date:
+            return 'date';
+          case FieldType.Time:
+            return 'time';
+          case FieldType.Text:
+            return 'string';
+          case FieldType.Dropdown:
+          default:
+            return 'string';
+        }
+      }
+    }
+
+    return 'string'; // Default to string if type not found
+  }
+
+  /**
+   * Get operator data for a specific field
+   */
+  getOperatorDataForField(field: SelectedField, index: number): DropdownItem[] {
+    const fieldType = this.getFieldType(field);
+    // Check cache first
+    if (this.operatorDataCache[fieldType]) {
+      return this.operatorDataCache[fieldType];
+    }
+
+    // Get operators based on field type
+    let operators: DropdownItem[] = [];
+    switch (fieldType) {
+      case 'boolean':
+        operators = this.dropdownDataService.getBooleanOperators(this.selectedLanguage);
+        break;
+      case 'number':
+        operators = this.dropdownDataService.getNumberOperators(this.selectedLanguage);
+        break;
+      case 'date':
+        operators = this.dropdownDataService.getDateOperators(this.selectedLanguage);
+        break;
+      case 'time':
+        operators = this.dropdownDataService.getDateOperators(this.selectedLanguage);
+        break;
+      case 'string':
+      default:
+        operators = this.dropdownDataService.getStringOperators(this.selectedLanguage);
+    }
+
+    // Cache results
+    this.operatorDataCache[fieldType] = operators;
+
+    return operators;
+  }
+
+  /**
+  * Get selected operator IDs for dropdown binding
+  */
+  getOperatorSelectedIds(field: SelectedField): string[] {
+    // If operator is undefined or null, or id is empty, return empty array
+    if (!field.operator || !field.operator.id) {
+      return [];
+    }
+
+    return [field.operator.id];
+  }
+
+  /**
+  * Check if operator selection is valid
+  */
+  isOperatorValid(field: SelectedField): boolean {
+    // Explicitly check if operator exists and has a non-empty id
+    return !!field.operator && !!field.operator.id;
+  }
+
+  /**
+   * Handle operator selection change
+   */
+  onOperatorValueChange(selectedDropdownItems: DropdownItem[], index: number): void {
+    const field = this.selectedFields[index];
+
+    if (!field) {
+      console.error('Field not found at index:', index);
+      return;
+    }
+
+    // Get the selected item (should be only one since multiSelect is false)
+    const selectedItem = selectedDropdownItems && selectedDropdownItems.length > 0 ? selectedDropdownItems[0] : null;
+
+    if (selectedItem) {
+      // Update the operator
+      field.operator = {
+        id: selectedItem.id,
+        label: selectedItem.label || ''
+      };
+    } else {
+      // Clear selection
+      field.operator = { id: '', label: '' };
+    }
+
+    // Mark as touched for validation
+    field.operatorTouched = true;
+
+    // Emit for parent component handling
+    this.operatorValueChange.emit({
+      selectedValue: selectedItem || { id: '', label: '' },
+      index
+    });
+
+    // Save changes
+    this.saveToLocalStorage();
   }
 
   // Optional helper method to get the field label

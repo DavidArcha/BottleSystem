@@ -41,8 +41,24 @@
                 </td>
 
                 <!-- Placeholder for other columns -->
-                <td>{{ getFieldLabel(field) }}</td>
-                <td>{{ field.operator?.label }}</td>
+                <td class="field">{{ getFieldLabel(field) }}</td>
+                <td class="operator">
+                    <ng-container *ngIf="!isLoading">
+                        <app-table-dropdown 
+                            [data]="getOperatorDataForField(field, i)" 
+                            [isTableView]="false" 
+                            [multiSelect]="false"
+                            [selectedValues]="getOperatorSelectedIds(field)"
+                            [selectedLanguage]="selectedLanguage"
+                            (selectedValuesChange)="onOperatorValueChange($event, i)">
+                        </app-table-dropdown>
+                        
+                        <!-- Validation error for operator -->
+                        <div class="validation-error" *ngIf="field.operatorTouched && !isOperatorValid(field)">
+                            Please select an operator.
+                        </div>
+                    </ng-container>
+                </td>
                 <td>{{ field.value }}</td>
                 <td>
                     <!-- Action buttons will go here -->
