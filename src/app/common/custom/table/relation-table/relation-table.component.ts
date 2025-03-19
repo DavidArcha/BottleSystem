@@ -63,15 +63,10 @@ export class RelationTableComponent {
    * Initialize fields with default values if needed
    */
   private initializeFields(): void {
-    console.log('Initial selectedFields:', JSON.stringify(this.selectedFields, null, 2));
     this.selectedFields.forEach(field => {
       // Ensure parentSelected is initialized if isParentArray is true
       if (field.isParentArray === true && !field.parentSelected) {
         field.parentSelected = [];
-      }
-      // For debugging
-      if (field.parentSelected && Array.isArray(field.parentSelected) && field.parentSelected.length > 0) {
-        console.log('Field with parentSelected:', field);
       }
     });
   }
@@ -82,18 +77,50 @@ export class RelationTableComponent {
   loadSystemTypeFields(): void {
     this.relationTableService.loadSystemTypeFields(this.selectedLanguage)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(fields => {
-        this.systemTypeData = fields;
-        this.relationTableService.updateSystemTypeData(fields);
+      .subscribe({
+        next: (fields) => {
+          // Ensure all IDs are strings for consistent comparison
+          this.systemTypeData = fields.map(item => ({
+            ...item,
+            id: String(item.id)
+          }));
 
-        // Update parentSelected values for language change
-        this.selectedFields = this.relationTableService.updateParentSelectedForLanguageChange(
-          this.selectedFields,
-          fields
-        );
+          this.relationTableService.updateSystemTypeData(this.systemTypeData);
+          // Update existing selected fields with new language data
+          if (fields.length > 0) {
+            this.selectedFields = this.relationTableService.updateParentSelectedForLanguageChange(
+              this.selectedFields,
+              this.systemTypeData
+            );
 
-        // Save updated fields to localStorage
-        this.saveToLocalStorage();
+            // Also ensure all parentSelected IDs are strings
+            this.selectedFields.forEach(field => {
+              if (field.parentSelected) {
+                if (Array.isArray(field.parentSelected)) {
+                  field.parentSelected = field.parentSelected.map(item => ({
+                    ...item,
+                    id: String(item.id)
+                  }));
+                } else {
+                  field.parentSelected = {
+                    ...field.parentSelected,
+                    id: String(field.parentSelected.id)
+                  };
+                }
+              }
+
+              if (field.parent && field.parent.id) {
+                field.parent = {
+                  ...field.parent,
+                  id: String(field.parent.id)
+                };
+              }
+            });
+          }
+        },
+        error: (err) => {
+          console.error('Error loading system type fields:', err);
+        }
       });
   }
 
@@ -153,14 +180,9 @@ export class RelationTableComponent {
       // Clear parent when no selection
       field.parent = { id: '', label: '' };
     }
-
     // Emit for parent component handling
     this.parentValueChange.emit({ selectedValues: selectedItems, index });
-
     // Save changes
     this.saveToLocalStorage();
-
-    // For debugging
-    console.log('Updated field:', field);
   }
 }

@@ -136,24 +136,27 @@ export class RelationTableService {
     return false;
   }
 
- /**
- * Get parent selected IDs for dropdown binding
- */
-getParentSelectedIds(field: SelectedField): string[] {
-  // If parentSelected is undefined or null, return empty array
-  if (!field.parentSelected) {
-    return [];
+  /**
+   * Get parent selected IDs for dropdown binding
+   */
+  getParentSelectedIds(field: SelectedField): string[] {
+    // If parentSelected is undefined or null, return empty array
+    if (!field.parentSelected) {
+      return [];
+    }
+
+    // If parentSelected is an array, extract the IDs
+    if (Array.isArray(field.parentSelected)) {
+      // Make sure we're only returning valid IDs and convert to string
+      const result = field.parentSelected
+        .filter(item => item && item.id !== undefined && item.id !== null)
+        .map(item => String(item.id)); // Ensure IDs are strings
+      return result;
+    }
+
+    // If parentSelected is a single object, return its ID in an array
+    return field.parentSelected.id !== undefined && field.parentSelected.id !== null
+      ? [String(field.parentSelected.id)] // Ensure ID is a string
+      : [];
   }
-  
-  // If parentSelected is an array, extract the IDs
-  if (Array.isArray(field.parentSelected)) {
-    // Make sure we're only returning valid IDs
-    return field.parentSelected
-      .filter(item => item && item.id) // Filter out null or undefined items
-      .map(item => item.id);
-  }
-  
-  // If parentSelected is a single object, return its ID in an array
-  return field.parentSelected.id ? [field.parentSelected.id] : [];
-}
 }
