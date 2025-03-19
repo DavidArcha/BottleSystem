@@ -56,9 +56,10 @@
                         </div>
                     </ng-container>
                 </td>
-                <td>{{ field.value }}</td>
+                <td class="value" *ngIf="getValueControl(field).show && isOperatorValid(field)">{{ field.value }}</td>
+                <td *ngIf="(!getValueControl(field).show || !isOperatorValid(field)) && shouldShowValueColumn()">
                 <td>
-                    <!-- Action buttons will go here -->
+
                 </td>
             </tr>
         </tbody>

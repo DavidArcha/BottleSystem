@@ -9,6 +9,7 @@ import { FieldServiceService } from '../../../componets/select-search/services/f
 import { FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
 import { DropdownDataService } from '../services/dropdown-data.service';
 import { OperatorTableService } from '../services/operator-table.service';
+import { ValueControlService } from '../services/value-control.service';
 
 @Component({
   selector: 'app-relation-table',
@@ -36,7 +37,9 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     private languageService: LanguageService,
     private fieldService: FieldServiceService,
     private dropdownDataService: DropdownDataService,
-    private operatorTableService: OperatorTableService
+    private operatorTableService: OperatorTableService,
+    private valueControlService: ValueControlService,
+    private searchService: SearchService
   ) { }
 
   ngOnInit(): void {
@@ -362,5 +365,45 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     this.parentValueChange.emit({ selectedValues: selectedItems, index });
     // Save changes
     this.saveToLocalStorage();
+  }
+  /**
+ * Initialize data needed for value controls
+ */
+  private initializeValueControlData(): void {
+    // Load brand data example
+    // this.searchService.getBrandData().pipe(takeUntil(this.destroy$))
+    //   .subscribe(data => {
+    //     this.valueControlService.setBrandData(data);
+    //   });
+
+    // // Load state data example
+    // this.searchService.getStateData().pipe(takeUntil(this.destroy$))
+    //   .subscribe(data => {
+    //     this.valueControlService.setStateData(data);
+    //   });
+
+    // Set dropdown data mapping
+    this.valueControlService.setDropdownDataMapping({
+      'brandField': 'brandData',
+      'stateField': 'stateData',
+      // Add other field mappings as needed
+    });
+  }
+
+  /**
+   * Get value control configuration for a field
+   */
+  getValueControl(field: SelectedField): any {
+    return this.valueControlService.getValueControl(field, this.getFieldType(field));
+  }
+
+  /**
+   * Check if value column should be displayed
+   */
+  shouldShowValueColumn(): boolean {
+    return this.selectedFields.some(field => {
+      const valueControl = this.getValueControl(field);
+      return valueControl.show && this.isOperatorValid(field);
+    });
   }
 }
