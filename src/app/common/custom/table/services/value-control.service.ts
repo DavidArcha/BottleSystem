@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { FieldType } from '../../../enums/field-types.enum';
+import { FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
 import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 
 import { DualOperators, NoValueOperators, OperatorType } from '../../../enums/operator-types.enum';
@@ -47,7 +47,7 @@ export class ValueControlService {
   /**
    * Determine value control properties based on selected field and operator
    */
-  getValueControl(selected: SelectedField, fieldType: string): any {
+  getValueControl(selected: SelectedField): any {
     const control = {
       show: false,
       dual: false,
@@ -75,7 +75,7 @@ export class ValueControlService {
     if (operatorId === OperatorType.Similar) {
       control.show = true;
       control.isSimilar = true;
-      control.type = this.getControlType(fieldType);
+      control.type = this.getControlType(this.getFieldType(selected));
       control.similarDropdownData = this.brandData;
 
       if (control.type === FieldType.Dropdown) {
@@ -89,7 +89,7 @@ export class ValueControlService {
     if (DualOperators.includes(operatorId as OperatorType)) {
       control.show = true;
       control.dual = true;
-      control.type = this.getControlType(fieldType);
+      control.type = this.getControlType(this.getFieldType(selected));
 
       if (control.type === FieldType.Dropdown) {
         control.dropdownData = this.getDropdownDataForField(selected.field?.id || '');
@@ -100,7 +100,7 @@ export class ValueControlService {
 
     // Scenario-3: Handle single controls for other operations
     control.show = true;
-    control.type = this.getControlType(fieldType);
+    control.type = this.getControlType(this.getFieldType(selected));
 
     if (control.type === FieldType.Dropdown) {
       control.dropdownData = this.getDropdownDataForField(selected.field?.id || '');
@@ -114,7 +114,6 @@ export class ValueControlService {
    */
   getDropdownDataForField(fieldId: string): DropdownItem[] {
     const dataSource = this.dropdownDataMapping[fieldId] || this.dropdownDataMapping['default'];
-
     switch (dataSource) {
       case 'brandData':
         return this.brandData;
@@ -147,13 +146,129 @@ export class ValueControlService {
   /**
    * Determine if value column should be shown
    */
-  shouldShowValueColumn(selectedFields: SelectedField[], isOperatorValidFn: (field: SelectedField) => boolean, getFieldTypeFn: (field: SelectedField) => string): boolean {
+  shouldShowValueColumn(selectedFields: SelectedField[], isOperatorValidFn: (field: SelectedField) => boolean): boolean {
     return selectedFields.some(field => {
-      // Get the field type for this specific field
-      const fieldType = getFieldTypeFn(field);
       // Then use that field type with getValueControl
-      const valueControl = this.getValueControl(field, fieldType);
+      const valueControl = this.getValueControl(field);
       return valueControl.show && isOperatorValidFn(field);
     });
+  }
+
+  /**
+ * Get field type for a selected field
+ */
+  getFieldType(field: SelectedField): string {
+    if (!field.field || !field.field.id) return 'string'; // Default to string
+
+    const fieldId = field.field.id;
+
+    // Check field type mapping
+    for (const [key, value] of Object.entries(FieldTypeMapping)) {
+      if (key.includes(fieldId)) {
+        // Map FieldType enum to string type
+        switch (value) {
+          case FieldType.Bool:
+            return 'boolean';
+          case FieldType.Number:
+            return 'number';
+          case FieldType.Date:
+            return 'date';
+          case FieldType.Time:
+            return 'time';
+          case FieldType.Text:
+            return 'string';
+          case FieldType.Dropdown:
+          default:
+            return 'string';
+        }
+      }
+    }
+
+    return 'string'; // Default to string if type not found
+  }
+
+  // Check if value is valid based on current operator
+  isValueValid(selected: SelectedField): boolean {
+    // No validation needed if operator doesn't require a value
+    const operatorId = selected.operator?.id?.toLowerCase() || '';
+    if (!operatorId || operatorId === 'select' || NoValueOperators.includes(operatorId as OperatorType)) {
+      return true;
+    }
+
+    // Special validation for similar operator
+    if (operatorId === 'similar') {
+      return Array.isArray(selected.value) &&
+        selected.value.length === 2 &&
+        !!selected.value[0] &&  // First part must have a value
+        !!selected.value[1];    // Brand selection must have a value
+    }
+
+    // Get field type
+    const fieldType = this.getFieldType(selected);
+
+    // Special handling for Button type
+    if (fieldType === FieldType.Button) {
+      // For dual operators with buttons
+      if (DualOperators.includes(operatorId as OperatorType)) {
+        return Array.isArray(selected.value) &&
+          selected.value.length === 2 &&
+          !!selected.value[0] &&
+          !!selected.value[1];
+      }
+
+      // For single button - check if value is not empty/null
+      return !!selected.value;
+    }
+
+    // Check for dual value operators
+    if (DualOperators.includes(operatorId as OperatorType)) {
+      // Must have an array with both values
+      if (!Array.isArray(selected.value) || selected.value.length !== 2) {
+        return false;
+      }
+
+      // For number fields, ensure both values are valid numbers
+      if (fieldType === FieldType.Number) {
+        return selected.value[0] !== undefined &&
+          selected.value[0] !== null &&
+          selected.value[0] !== '' &&
+          !isNaN(Number(selected.value[0])) &&
+          selected.value[1] !== undefined &&
+          selected.value[1] !== null &&
+          selected.value[1] !== '' &&
+          !isNaN(Number(selected.value[1]));
+      }
+
+      // For dropdown fields, check both values are selected
+      if (fieldType === FieldType.Dropdown) {
+        return !!selected.value[0] && !!selected.value[1];
+      }
+
+      // For other field types, just check they're not empty
+      return selected.value[0] !== undefined &&
+        selected.value[0] !== null &&
+        selected.value[0] !== '' &&
+        selected.value[1] !== undefined &&
+        selected.value[1] !== null &&
+        selected.value[1] !== '';
+    }
+
+    // For number fields, ensure value is a valid number
+    if (fieldType === FieldType.Number) {
+      return selected.value !== undefined &&
+        selected.value !== null &&
+        selected.value !== '' &&
+        !isNaN(Number(selected.value));
+    }
+
+    // For dropdown fields, check value exists
+    if (fieldType === FieldType.Dropdown) {
+      return !!selected.value;
+    }
+
+    // For other fields, just check that value exists
+    return selected.value !== undefined &&
+      selected.value !== null &&
+      selected.value !== '';
   }
 }

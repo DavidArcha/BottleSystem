@@ -341,4 +341,15 @@ export class SelectionService {
       this.selectedFieldsSubject.next([]);
     }
   }
+
+  // Delete field
+  deleteField(index: number): void {
+    const currentFields = this.selectedFieldsSubject.getValue();
+    if (index < 0 || index >= currentFields.length) return;
+
+    currentFields.splice(index, 1);
+    this.selectedFieldsSubject.next([...currentFields]);
+    this.storageService.setItem('selectedFields', JSON.stringify(currentFields));
+    localStorage.removeItem('savedAccordionState');
+  }
 }

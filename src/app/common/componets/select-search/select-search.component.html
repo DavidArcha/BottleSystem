@@ -49,7 +49,8 @@
         (fieldSelected)="onFieldSelected($event)">
     </app-accordion-section>
 
-    <app-relation-table [selectedFields]="selectedFields" [selectedLanguage]="currentLanguage">
+    <app-relation-table [selectedFields]="selectedFields" [selectedLanguage]="currentLanguage"
+        (deleteSelectedField)="onDeleteSelectedField($event)" (searchSelectedField)="onSearchSelectedField($event)">
     </app-relation-table>
 
 

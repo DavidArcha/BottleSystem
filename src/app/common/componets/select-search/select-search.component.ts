@@ -458,6 +458,16 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectionService.addSavedGroup(groupField);
   }
 
+  // Handle delete field action in relation table
+  onDeleteSelectedField(index: number): void {
+    this.selectionService.deleteField(index);
+  }
+
+  // Handle search action from relation table
+  onSearchSelectedField(event: any): void {
+    console.log('Search for field', event);
+  }
+
   /**
    * Clear the relation table
    */
