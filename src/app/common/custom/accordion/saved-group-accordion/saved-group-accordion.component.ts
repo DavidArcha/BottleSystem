@@ -76,10 +76,10 @@ export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
     this.stateService.selectedField$
       .pipe(takeUntil(this.destroy$))
       .subscribe(field => {
-        if (field && field !== this.selectedField) {
-          this.selectedField = field;
-          this.cdr.markForCheck();
-        }
+        // Important: Set selectedField to null when field is null
+        // This ensures proper change detection when clearing selection
+        this.selectedField = field;
+        this.cdr.markForCheck();
       });
 
     this.stateService.isLoading$
@@ -225,12 +225,14 @@ export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if a field is selected
-   */
+  * Check if a field is selected
+  */
   isFieldSelected(field: SearchCriteria | any): boolean {
-    if (!this.selectedField || !field) return false;
+    // If there's no selected field, nothing can be selected
+    if (!this.selectedField) return false;
+    if (!field) return false;
 
-    // Use unique ID first
+    // Use unique ID first as it's most reliable
     if (field._uniqueId && this.selectedField._uniqueId) {
       return field._uniqueId === this.selectedField._uniqueId;
     }
@@ -240,7 +242,25 @@ export class SavedGroupAccordionComponent implements OnInit, OnDestroy {
       return field.rowId === this.selectedField.rowId;
     }
 
-    // Use reference equality as a last resort
+    // Compare field properties deeply
+    if (field.field && this.selectedField.field) {
+      // Compare field IDs
+      const fieldId1 = typeof field.field === 'object' ? field.field.id : field.field;
+      const fieldId2 = typeof this.selectedField.field === 'object' ? this.selectedField.field.id : this.selectedField.field;
+
+      if (fieldId1 !== fieldId2) return false;
+
+      // Compare operator IDs
+      const opId1 = typeof field.operator === 'object' ? field.operator.id : field.operator;
+      const opId2 = typeof this.selectedField.operator === 'object' ? this.selectedField.operator.id : this.selectedField.operator;
+
+      if (opId1 !== opId2) return false;
+
+      // Compare values
+      return field.value === this.selectedField.value;
+    }
+
+    // Reference equality as a last resort
     return Object.is(field, this.selectedField);
   }
 
