@@ -352,4 +352,50 @@ export class SelectionService {
     this.storageService.setItem('selectedFields', JSON.stringify(currentFields));
     localStorage.removeItem('savedAccordionState');
   }
+
+  // Convert selected fields to search criteria for backend submission
+  convertSelectedFieldsToSearchCriteria(selectedFields: SelectedField[]): SearchCriteria[] {
+    if (selectedFields.length === 0) return [];
+
+    return selectedFields.map(field => {
+      // Format the value - if it's an array, join with "-"
+      let formattedValue = field.value;
+
+      // Check if value is an array and convert to hyphenated string
+      if (Array.isArray(field.value)) {
+        // Get values from the array - handle both primitive and object values
+        const values = field.value.map(item => {
+          // If item is an object with id/label (like dropdown items)
+          if (item && typeof item === 'object' && 'id' in item) {
+            return item.id;
+          }
+          // Otherwise return the item itself
+          return item;
+        });
+
+        // Join the values with "-"
+        formattedValue = values.join('-');
+      } else if (field.value && typeof field.value === 'object' && 'id' in field.value) {
+        // For single dropdown items that are objects
+        formattedValue = field.value.id;
+      }
+
+
+      // Return the search criteria with proper parent handling and rowId
+      return {
+        rowId: field.rowid || '', // Include rowId, empty if not exists
+        parent: field.parent,
+        parentSelected: field.parentSelected,
+        field: {
+          id: field.field.id,
+          label: field.field.label
+        },
+        operator: {
+          id: field.operator?.id || '',
+          label: field.operator?.label || ''
+        },
+        value: formattedValue
+      };
+    });
+  }
 }
