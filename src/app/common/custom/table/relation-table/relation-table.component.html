@@ -150,10 +150,12 @@
                                 </ng-container>
                                 <ng-template #dualTextInputs>
                                     <div class="dual-input-container">
-                                        <input type="text" [(ngModel)]="field.value[0]"
-                                            (blur)="field.valueTouched = true" />
-                                        <input type="text" [(ngModel)]="field.value[1]"
-                                            (blur)="field.valueTouched = true" />
+                                        <input type="text" [ngModel]="field.value && field.value[0] ? field.value[0] : ''" 
+                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
+                                               (blur)="field.valueTouched = true" />
+                                        <input type="text" [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
+                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
+                                               (blur)="field.valueTouched = true" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">

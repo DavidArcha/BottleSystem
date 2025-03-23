@@ -79,8 +79,8 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
 
   /**
- * Initialize fields with default values if needed
- */
+   * Initialize fields with default values if needed
+   */
   private initializeFields(): void {
     this.selectedFields.forEach(field => {
       // Ensure parentSelected is initialized if isParentArray is true
@@ -93,6 +93,14 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       field.operatorTouched = field.operatorTouched !== undefined ? field.operatorTouched : false;
       // Always ensure parentTouched is initialized
       field.parentTouched = field.parentTouched !== undefined ? field.parentTouched : false;
+      // Always ensure valueTouched is initialized
+      field.valueTouched = field.valueTouched !== undefined ? field.valueTouched : false;
+
+      // Initialize value array for dual inputs
+      const valueControl = this.valueControlService.getValueControl(field);
+      if (valueControl && valueControl.dual && field.value === null || field.value === undefined) {
+        field.value = ['', ''];
+      }
     });
   }
 
@@ -101,6 +109,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
    */
   private clearOperatorDataCache(): void {
     this.operatorDataCache = {};
+  }
+
+  /**
+ * Initialize dual value array if null or undefined
+ */
+  initDualValue(value: any): any[] {
+    if (!Array.isArray(value)) {
+      return ['', ''];
+    }
+    return value;
   }
 
   /**
@@ -383,346 +401,351 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       return valueControl.show && this.isOperatorValid(field);
     });
   }
- // Update onSearchSelectedField to validate before emitting
- onSearchSelectedField(selected: SelectedField): void {
-  // Mark fields as touched for validation
-  selected.parentTouched = true;
-  selected.operatorTouched = true;
-  selected.valueTouched = true;
+  // Update onSearchSelectedField to validate before emitting
+  onSearchSelectedField(selected: SelectedField): void {
+    // Mark fields as touched for validation
+    selected.parentTouched = true;
+    selected.operatorTouched = true;
+    selected.valueTouched = true;
 
-  // Validate all required fields
-  if (!this.isParentValid(selected)) {
-    console.error('Parent validation failed');
-    return;
-  }
-
-  if (!this.isOperatorValid(selected)) {
-    console.error('Operator validation failed');
-    return;
-  }
-
-  if (!this.isValueValid(selected)) {
-    console.error('Value validation failed');
-    return;
-  }
-
-  // If all validations pass, create search criteria
-  const searchCriteria: SearchCriteria = {
-    parent: selected.parent,
-    parentSelected: selected.parentSelected,
-    field: {
-      id: selected.field.id,
-      label: selected.field.label
-    },
-    operator: {
-      id: selected.operator?.id || '',
-      label: selected.operator?.label || ''
-    },
-    value: selected.value || null
-  };
-
-  // Emit the selected field (with validation state)
-  this.searchSelectedField.emit(selected);
-}
-
-// Add this method to the class
-validateAllFields(): { isValid: boolean, invalidFields: string[] } {
-  const invalidFieldsMessages: string[] = [];
-
-  // Loop through each field and check for validation issues
-  this.selectedFields.forEach((field, index) => {
-    // Check parent validation
-    field.parentTouched = true;
-    if (!this.isParentValid(field)) {
-      invalidFieldsMessages.push(`Row ${index + 1}: Parent selection`);
+    // Validate all required fields
+    if (!this.isParentValid(selected)) {
+      console.error('Parent validation failed');
+      return;
     }
 
-    // Check operator validation
-    field.operatorTouched = true;
-    if (!this.isOperatorValid(field)) {
-      invalidFieldsMessages.push(`Row ${index + 1}: Operator selection`);
+    if (!this.isOperatorValid(selected)) {
+      console.error('Operator validation failed');
+      return;
     }
 
-    // Check value validation if needed based on operator
-    const valueControl = this.getValueControl(field);
-    if (valueControl.show && this.isOperatorValid(field)) {
-      field.valueTouched = true;
-      if (!this.isValueValid(field)) {
-        const fieldName = field.field?.label || `Field ${index + 1}`;
-        invalidFieldsMessages.push(`Row ${index + 1}: Value for ${fieldName}`);
+    if (!this.isValueValid(selected)) {
+      console.error('Value validation failed');
+      return;
+    }
+
+    // If all validations pass, create search criteria
+    const searchCriteria: SearchCriteria = {
+      parent: selected.parent,
+      parentSelected: selected.parentSelected,
+      field: {
+        id: selected.field.id,
+        label: selected.field.label
+      },
+      operator: {
+        id: selected.operator?.id || '',
+        label: selected.operator?.label || ''
+      },
+      value: selected.value || null
+    };
+
+    // Emit the selected field (with validation state)
+    this.searchSelectedField.emit(selected);
+  }
+
+  // Add this method to the class
+  validateAllFields(): { isValid: boolean, invalidFields: string[] } {
+    const invalidFieldsMessages: string[] = [];
+
+    // Loop through each field and check for validation issues
+    this.selectedFields.forEach((field, index) => {
+      // Check parent validation
+      field.parentTouched = true;
+      if (!this.isParentValid(field)) {
+        invalidFieldsMessages.push(`Row ${index + 1}: Parent selection`);
+      }
+
+      // Check operator validation
+      field.operatorTouched = true;
+      if (!this.isOperatorValid(field)) {
+        invalidFieldsMessages.push(`Row ${index + 1}: Operator selection`);
+      }
+
+      // Check value validation if needed based on operator
+      const valueControl = this.getValueControl(field);
+      if (valueControl.show && this.isOperatorValid(field)) {
+        field.valueTouched = true;
+        if (!this.isValueValid(field)) {
+          const fieldName = field.field?.label || `Field ${index + 1}`;
+          invalidFieldsMessages.push(`Row ${index + 1}: Value for ${fieldName}`);
+        }
+      }
+    });
+
+    return {
+      isValid: invalidFieldsMessages.length === 0,
+      invalidFields: invalidFieldsMessages
+    };
+  }
+
+  onDeleteSelectedField(index: number): void {
+    this.deleteSelectedField.emit(index);
+  }
+
+  // Add these methods for numeric validation
+
+  // Validate single number input field
+  validateNumberInput(event: Event, selected: SelectedField): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+
+    // If empty, allow it (will be caught by required validation if needed)
+    if (!value) {
+      return;
+    }
+
+    // Check if value is numeric
+    if (!/^-?\d*\.?\d*$/.test(value)) {
+      // If not numeric, revert to previous valid value or empty string
+      input.value = selected.value || '';
+      selected.value = input.value;
+    }
+  }
+
+  // Validate dual number input fields
+  validateDualNumberInput(event: Event, selected: SelectedField, index: number): void {
+       
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+
+    // If empty, allow it (will be caught by required validation if needed)
+    if (!value) {
+      return;
+    }
+
+    // Check if value is numeric
+    if (!/^-?\d*\.?\d*$/.test(value)) {
+      // If not numeric, revert to previous valid value or empty string
+      if (Array.isArray(selected.value)) {
+        input.value = selected.value[index] || '';
+        selected.value[index] = input.value;
+      } else {
+        // Handle case where value isn't an array yet
+        selected.value = ['', ''];
+        input.value = '';
       }
     }
-  });
-
-  return {
-    isValid: invalidFieldsMessages.length === 0,
-    invalidFields: invalidFieldsMessages
-  };
-}
-
-onDeleteSelectedField(index: number): void {
-  this.deleteSelectedField.emit(index);
-}
-
-// Add these methods for numeric validation
-
-// Validate single number input field
-validateNumberInput(event: Event, selected: SelectedField): void {
-  const input = event.target as HTMLInputElement;
-  const value = input.value;
-
-  // If empty, allow it (will be caught by required validation if needed)
-  if (!value) {
-    return;
   }
 
-  // Check if value is numeric
-  if (!/^-?\d*\.?\d*$/.test(value)) {
-    // If not numeric, revert to previous valid value or empty string
-    input.value = selected.value || '';
-    selected.value = input.value;
-  }
-}
+  // Get text to display when button is clicked
+  getButtonDisplayText(selected: SelectedField, index?: number): string {
+    // You can customize what text appears after the button is clicked
+    // This could come from the field data or be generated dynamically
+    const fieldLabel = selected.field.label || 'Selected';
+    const timestamp = new Date().toLocaleTimeString();
 
-// Validate dual number input fields
-validateDualNumberInput(event: Event, selected: SelectedField, index: number): void {
-  const input = event.target as HTMLInputElement;
-  const value = input.value;
-
-  // If empty, allow it (will be caught by required validation if needed)
-  if (!value) {
-    return;
-  }
-
-  // Check if value is numeric
-  if (!/^-?\d*\.?\d*$/.test(value)) {
-    // If not numeric, revert to previous valid value or empty string
-    if (Array.isArray(selected.value)) {
-      input.value = selected.value[index] || '';
-      selected.value[index] = input.value;
+    if (index === undefined) {
+      return `${fieldLabel} selected at ${timestamp}`;
     } else {
-      // Handle case where value isn't an array yet
-      selected.value = ['', ''];
-      input.value = '';
+      return `Option ${index + 1} - ${fieldLabel} selected at ${timestamp}`;
     }
   }
-}
 
-// Get text to display when button is clicked
-getButtonDisplayText(selected: SelectedField, index?: number): string {
-  // You can customize what text appears after the button is clicked
-  // This could come from the field data or be generated dynamically
-  const fieldLabel = selected.field.label || 'Selected';
-  const timestamp = new Date().toLocaleTimeString();
+  // Handle button click
+  onFieldButtonClick(selected: SelectedField, index?: number): void {
+    selected.valueTouched = true;
 
-  if (index === undefined) {
-    return `${fieldLabel} selected at ${timestamp}`;
-  } else {
-    return `Option ${index + 1} - ${fieldLabel} selected at ${timestamp}`;
+    // Generate display text
+    const displayText = this.getButtonDisplayText(selected, index);
+
+    if (index === undefined) {
+      // For single button, store the display text instead of boolean
+      // Before storing text, check if it was already set (toggle behavior)
+      selected.value = selected.value ? null : displayText;
+    } else {
+      // For dual buttons, ensure we have an array and store text at specific index
+      if (!Array.isArray(selected.value)) {
+        selected.value = [null, null];
+      }
+      // Toggle behavior - set to null if already has text, otherwise set the text
+      selected.value[index] = selected.value[index] ? null : displayText;
+    }
   }
-}
 
-// Handle button click
-onFieldButtonClick(selected: SelectedField, index?: number): void {
-  selected.valueTouched = true;
+  getSelectedDropdownValues(selected: SelectedField): string[] {
+    if (!selected.value) return [];
 
-  // Generate display text
-  const displayText = this.getButtonDisplayText(selected, index);
+    // If the value is already an object with id, extract the id
+    if (typeof selected.value === 'object' && selected.value !== null && 'id' in selected.value) {
+      return [selected.value.id];
+    }
 
-  if (index === undefined) {
-    // For single button, store the display text instead of boolean
-    // Before storing text, check if it was already set (toggle behavior)
-    selected.value = selected.value ? null : displayText;
-  } else {
-    // For dual buttons, ensure we have an array and store text at specific index
+    // If it's an array of objects, map to ids
+    if (Array.isArray(selected.value) && selected.value.length > 0 &&
+      typeof selected.value[0] === 'object' && 'id' in selected.value[0]) {
+      return selected.value.map(item => item.id);
+    }
+
+    // If it's a simple string, wrap in array
+    if (typeof selected.value === 'string') {
+      return [selected.value];
+    }
+
+    return [];
+  }
+
+  // Get selected values for dual dropdown at specific index
+  getDualSelectedDropdownValues(selected: SelectedField, index: number): string[] {
+    if (!selected.value || !Array.isArray(selected.value) || !selected.value[index]) {
+      return [];
+    }
+
+    const value = selected.value[index];
+
+    // If the value is already an object with id
+    if (typeof value === 'object' && value !== null && 'id' in value) {
+      return [value.id];
+    }
+
+    // If it's a simple string
+    if (typeof value === 'string') {
+      return [value];
+    }
+
+    return [];
+  }
+
+  // Handle single dropdown value change
+  onDropdownValueChange(selectedItems: DropdownItem[], index: number): void {
+    const selected = this.selectedFields[index];
+
+    if (!selectedItems || selectedItems.length === 0) {
+      selected.value = null;
+    } else if (selectedItems.length === 1) {
+      // Store the complete object to preserve language information
+      selected.value = selectedItems[0];
+    } else {
+      // Store array of objects for multi-select
+      selected.value = selectedItems;
+    }
+
+    // Mark as touched for validation
+    selected.valueTouched = true;
+  }
+
+  // Handle dual dropdown value change
+  onDualDropdownValueChange(selectedItems: DropdownItem[], index: number, dualIndex: number): void {
+    if (index < 0 || index >= this.selectedFields.length) {
+      console.error('Invalid index in onDualDropdownValueChange:', index);
+      return;
+    }
+    const selected = this.selectedFields[index];
+
+    // Ensure value is always initialized as an array of length 2
+    if (!Array.isArray(selected.value) || selected.value.length !== 2) {
+      selected.value = [null, null];
+    }
+
+    if (!selectedItems || selectedItems.length === 0) {
+      selected.value[dualIndex] = null;
+    } else if (selectedItems.length === 1) {
+      // Store the complete object to preserve language information
+      selected.value[dualIndex] = selectedItems[0];
+    } else {
+      // For multiple selections (unusual case)
+      selected.value[dualIndex] = selectedItems[0];
+    }
+
+    // Mark as touched for validation
+    selected.valueTouched = true;
+  }
+
+  // For similar operator field dropdown values
+  getSimilarFieldDropdownValues(selected: SelectedField): string[] {
+    if (!selected.value || !Array.isArray(selected.value) || !selected.value[0]) {
+      return [];
+    }
+
+    const value = selected.value[0];
+
+    // If the value is already an object with id
+    if (typeof value === 'object' && value !== null && 'id' in value) {
+      return [value.id];
+    }
+
+    // If it's a simple string
+    if (typeof value === 'string') {
+      return [value];
+    }
+
+    return [];
+  }
+
+  // For similar operator brand dropdown values
+  getSimilarBrandDropdownValues(selected: SelectedField): string[] {
+    if (!selected.value || !Array.isArray(selected.value) || !selected.value[1]) {
+      return [];
+    }
+
+    const value = selected.value[1];
+
+    // If the value is already an object with id
+    if (typeof value === 'object' && value !== null && 'id' in value) {
+      return [value.id];
+    }
+
+    // If it's a simple string
+    if (typeof value === 'string') {
+      return [value];
+    }
+
+    return [];
+  }
+
+  // Handle change of the field value in similar operator
+  onSimilarFieldDropdownChange(selectedItems: DropdownItem[], index: number): void {
+    const selected = this.selectedFields[index];
+
+    // Ensure value is an array
     if (!Array.isArray(selected.value)) {
       selected.value = [null, null];
     }
-    // Toggle behavior - set to null if already has text, otherwise set the text
-    selected.value[index] = selected.value[index] ? null : displayText;
-  }
-}
 
-getSelectedDropdownValues(selected: SelectedField): string[] {
-  if (!selected.value) return [];
+    if (!selectedItems || selectedItems.length === 0) {
+      selected.value[0] = null;
+    } else if (selectedItems.length === 1) {
+      selected.value[0] = selectedItems[0];
+    } else {
+      selected.value[0] = selectedItems[0];
+    }
 
-  // If the value is already an object with id, extract the id
-  if (typeof selected.value === 'object' && selected.value !== null && 'id' in selected.value) {
-    return [selected.value.id];
-  }
-
-  // If it's an array of objects, map to ids
-  if (Array.isArray(selected.value) && selected.value.length > 0 &&
-    typeof selected.value[0] === 'object' && 'id' in selected.value[0]) {
-    return selected.value.map(item => item.id);
+    // Mark as touched for validation
+    selected.valueTouched = true;
   }
 
-  // If it's a simple string, wrap in array
-  if (typeof selected.value === 'string') {
-    return [selected.value];
+  // Handle change of the brand dropdown in similar operator
+  onSimilarBrandDropdownChange(selectedItems: DropdownItem[], index: number): void {
+    const selected = this.selectedFields[index];
+
+    // Ensure value is an array
+    if (!Array.isArray(selected.value)) {
+      selected.value = [null, null];
+    }
+
+    if (!selectedItems || selectedItems.length === 0) {
+      selected.value[1] = null;
+    } else if (selectedItems.length === 1) {
+      selected.value[1] = selectedItems[0];
+    } else {
+      selected.value[1] = selectedItems[0];
+    }
+
+    // Mark as touched for validation
+    selected.valueTouched = true;
   }
 
-  return [];
-}
+  // Handle click of button in similar operator case
+  onSimilarButtonClick(selected: SelectedField): void {
+    // Ensure value is an array
+    if (!Array.isArray(selected.value)) {
+      selected.value = [null, null];
+    }
 
-// Get selected values for dual dropdown at specific index
-getDualSelectedDropdownValues(selected: SelectedField, index: number): string[] {
-  if (!selected.value || !Array.isArray(selected.value) || !selected.value[index]) {
-    return [];
+    // Toggle the button selection
+    const displayText = this.getButtonDisplayText(selected);
+    selected.value[0] = selected.value[0] ? null : displayText;
+
+    // Mark as touched for validation
+    selected.valueTouched = true;
   }
-
-  const value = selected.value[index];
-
-  // If the value is already an object with id
-  if (typeof value === 'object' && value !== null && 'id' in value) {
-    return [value.id];
-  }
-
-  // If it's a simple string
-  if (typeof value === 'string') {
-    return [value];
-  }
-
-  return [];
-}
-
-// Handle single dropdown value change
-onDropdownValueChange(selectedItems: DropdownItem[], index: number): void {
-  const selected = this.selectedFields[index];
-
-  if (!selectedItems || selectedItems.length === 0) {
-    selected.value = null;
-  } else if (selectedItems.length === 1) {
-    // Store the complete object to preserve language information
-    selected.value = selectedItems[0];
-  } else {
-    // Store array of objects for multi-select
-    selected.value = selectedItems;
-  }
-
-  // Mark as touched for validation
-  selected.valueTouched = true;
-}
-
-// Handle dual dropdown value change
-onDualDropdownValueChange(selectedItems: DropdownItem[], index: number, dualIndex: number): void {
-  const selected = this.selectedFields[index];
-
-  // Ensure value is an array of length 2
-  if (!Array.isArray(selected.value) || selected.value.length !== 2) {
-    selected.value = [null, null];
-  }
-
-  if (!selectedItems || selectedItems.length === 0) {
-    selected.value[dualIndex] = null;
-  } else if (selectedItems.length === 1) {
-    // Store the complete object to preserve language information
-    selected.value[dualIndex] = selectedItems[0];
-  } else {
-    // For multiple selections (unusual case)
-    selected.value[dualIndex] = selectedItems[0];
-  }
-
-  // Mark as touched for validation
-  selected.valueTouched = true;
-}
-
-// For similar operator field dropdown values
-getSimilarFieldDropdownValues(selected: SelectedField): string[] {
-  if (!selected.value || !Array.isArray(selected.value) || !selected.value[0]) {
-    return [];
-  }
-
-  const value = selected.value[0];
-
-  // If the value is already an object with id
-  if (typeof value === 'object' && value !== null && 'id' in value) {
-    return [value.id];
-  }
-
-  // If it's a simple string
-  if (typeof value === 'string') {
-    return [value];
-  }
-
-  return [];
-}
-
-// For similar operator brand dropdown values
-getSimilarBrandDropdownValues(selected: SelectedField): string[] {
-  if (!selected.value || !Array.isArray(selected.value) || !selected.value[1]) {
-    return [];
-  }
-
-  const value = selected.value[1];
-
-  // If the value is already an object with id
-  if (typeof value === 'object' && value !== null && 'id' in value) {
-    return [value.id];
-  }
-
-  // If it's a simple string
-  if (typeof value === 'string') {
-    return [value];
-  }
-
-  return [];
-}
-
-// Handle change of the field value in similar operator
-onSimilarFieldDropdownChange(selectedItems: DropdownItem[], index: number): void {
-  const selected = this.selectedFields[index];
-
-  // Ensure value is an array
-  if (!Array.isArray(selected.value)) {
-    selected.value = [null, null];
-  }
-
-  if (!selectedItems || selectedItems.length === 0) {
-    selected.value[0] = null;
-  } else if (selectedItems.length === 1) {
-    selected.value[0] = selectedItems[0];
-  } else {
-    selected.value[0] = selectedItems[0];
-  }
-
-  // Mark as touched for validation
-  selected.valueTouched = true;
-}
-
-// Handle change of the brand dropdown in similar operator
-onSimilarBrandDropdownChange(selectedItems: DropdownItem[], index: number): void {
-  const selected = this.selectedFields[index];
-
-  // Ensure value is an array
-  if (!Array.isArray(selected.value)) {
-    selected.value = [null, null];
-  }
-
-  if (!selectedItems || selectedItems.length === 0) {
-    selected.value[1] = null;
-  } else if (selectedItems.length === 1) {
-    selected.value[1] = selectedItems[0];
-  } else {
-    selected.value[1] = selectedItems[0];
-  }
-
-  // Mark as touched for validation
-  selected.valueTouched = true;
-}
-
-// Handle click of button in similar operator case
-onSimilarButtonClick(selected: SelectedField): void {
-  // Ensure value is an array
-  if (!Array.isArray(selected.value)) {
-    selected.value = [null, null];
-  }
-
-  // Toggle the button selection
-  const displayText = this.getButtonDisplayText(selected);
-  selected.value[0] = selected.value[0] ? null : displayText;
-
-  // Mark as touched for validation
-  selected.valueTouched = true;
-}
 }
