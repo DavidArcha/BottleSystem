@@ -545,6 +545,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     // Convert selected fields to search criteria format
     const searchCriteria = this.selectionService.convertSelectedFieldsToSearchCriteria(this.selectedFields);
     this.searchCriteria = searchCriteria;
+    console.log('Search criteria:', searchCriteria);
 
     // Execute the search via the search service
     this.isLoading = false;
