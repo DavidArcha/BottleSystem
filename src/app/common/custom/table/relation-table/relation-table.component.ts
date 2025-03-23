@@ -71,6 +71,12 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     this.relationTableService.error$
       .pipe(takeUntil(this.destroy$))
       .subscribe(error => this.error = error);
+
+    // Add this block to handle changes to selectedFields
+    if (this.selectedFields && this.selectedFields.length > 0) {
+      // Initialize fields on component load if they already exist
+      this.initializeFields();
+    }
   }
 
   ngOnDestroy(): void {
@@ -82,26 +88,54 @@ export class RelationTableComponent implements OnInit, OnDestroy {
    * Initialize fields with default values if needed
    */
   private initializeFields(): void {
+    if (!this.selectedFields) return;
+
+    let fieldChanged = false;
+
     this.selectedFields.forEach(field => {
-      // Ensure parentSelected is initialized if isParentArray is true
+      const valueControl = this.getValueControl(field);
+
+      // Initialize dual values if needed
+      if (valueControl && valueControl.dual) {
+        if (!Array.isArray(field.value)) {
+          field.value = ['', ''];
+          fieldChanged = true;
+        }
+      }
+
+      // Initialize other field properties if needed
       if (field.isParentArray === true && !field.parentSelected) {
         field.parentSelected = [];
+        fieldChanged = true;
       }
-      // Always ensure operator is initialized
-      field.operator = field.operator || { id: '', label: '' };
-      // Always ensure operatorTouched is initialized
-      field.operatorTouched = field.operatorTouched !== undefined ? field.operatorTouched : false;
-      // Always ensure parentTouched is initialized
-      field.parentTouched = field.parentTouched !== undefined ? field.parentTouched : false;
-      // Always ensure valueTouched is initialized
-      field.valueTouched = field.valueTouched !== undefined ? field.valueTouched : false;
 
-      // Initialize value array for dual inputs
-      const valueControl = this.valueControlService.getValueControl(field);
-      if (valueControl && valueControl.dual && field.value === null || field.value === undefined) {
-        field.value = ['', ''];
+      // Initialize operator if needed
+      if (!field.operator) {
+        field.operator = { id: '', label: '' };
+        fieldChanged = true;
+      }
+
+      // Initialize touched flags if needed
+      if (field.operatorTouched === undefined) {
+        field.operatorTouched = false;
+        fieldChanged = true;
+      }
+
+      if (field.parentTouched === undefined) {
+        field.parentTouched = false;
+        fieldChanged = true;
+      }
+
+      if (field.valueTouched === undefined) {
+        field.valueTouched = false;
+        fieldChanged = true;
       }
     });
+
+    // Only save if changes were made
+    if (fieldChanged) {
+      this.relationTableService.saveToLocalStorage(this.selectedFields);
+    }
   }
 
   /**
@@ -220,7 +254,27 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
   // Check if value is valid based on current operator
   isValueValid(selected: SelectedField): boolean {
-    return this.valueControlService.isValueValid(selected);
+    const control = this.getValueControl(selected);
+    if (!control || !control.show) return true;
+
+    if (control.dual) {
+      // Check if field.value is properly initialized and has valid values
+      if (!Array.isArray(selected.value)) return false;
+
+      if (control.type === this.FieldType.Number) {
+        // For number fields, check if both are valid numbers
+        return selected.value.length >= 2 &&
+          selected.value[0] !== null && selected.value[0] !== undefined && selected.value[0] !== '' &&
+          selected.value[1] !== null && selected.value[1] !== undefined && selected.value[1] !== '';
+      }
+
+      // For other field types
+      return selected.value.length >= 2 &&
+        !!selected.value[0] && !!selected.value[1];
+    }
+
+    // For regular single values
+    return selected.value !== null && selected.value !== undefined && selected.value !== '';
   }
 
   /**
@@ -504,27 +558,23 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
   // Validate dual number input fields
   validateDualNumberInput(event: Event, selected: SelectedField, index: number): void {
-       
     const input = event.target as HTMLInputElement;
     const value = input.value;
 
-    // If empty, allow it (will be caught by required validation if needed)
-    if (!value) {
-      return;
+    // Ensure field.value is an array
+    if (!Array.isArray(selected.value)) {
+      selected.value = ['', ''];
     }
 
-    // Check if value is numeric
-    if (!/^-?\d*\.?\d*$/.test(value)) {
-      // If not numeric, revert to previous valid value or empty string
-      if (Array.isArray(selected.value)) {
-        input.value = selected.value[index] || '';
-        selected.value[index] = input.value;
-      } else {
-        // Handle case where value isn't an array yet
-        selected.value = ['', ''];
-        input.value = '';
-      }
+    // Validate the input based on your requirements
+    if (value && !isNaN(Number(value))) {
+      selected.value[index] = Number(value);
+    } else {
+      selected.value[index] = '';
     }
+
+    // Save changes to localStorage
+    this.relationTableService.saveToLocalStorage(this.selectedFields);
   }
 
   // Get text to display when button is clicked
@@ -543,23 +593,24 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
   // Handle button click
   onFieldButtonClick(selected: SelectedField, index?: number): void {
+    if (index !== undefined) {
+      // Dual button case
+      // Ensure field.value is an array
+      if (!Array.isArray(selected.value)) {
+        selected.value = ['', ''];
+      }
+
+      // Set the value at the specified index
+      selected.value[index] = 'Selected Item ' + (index + 1);
+    } else {
+      // Single button case
+      selected.value = 'Selected Item';
+    }
+
     selected.valueTouched = true;
 
-    // Generate display text
-    const displayText = this.getButtonDisplayText(selected, index);
-
-    if (index === undefined) {
-      // For single button, store the display text instead of boolean
-      // Before storing text, check if it was already set (toggle behavior)
-      selected.value = selected.value ? null : displayText;
-    } else {
-      // For dual buttons, ensure we have an array and store text at specific index
-      if (!Array.isArray(selected.value)) {
-        selected.value = [null, null];
-      }
-      // Toggle behavior - set to null if already has text, otherwise set the text
-      selected.value[index] = selected.value[index] ? null : displayText;
-    }
+    // Save changes to localStorage
+    this.relationTableService.saveToLocalStorage(this.selectedFields);
   }
 
   getSelectedDropdownValues(selected: SelectedField): string[] {
@@ -585,24 +636,14 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
 
   // Get selected values for dual dropdown at specific index
-  getDualSelectedDropdownValues(selected: SelectedField, index: number): string[] {
-    if (!selected.value || !Array.isArray(selected.value) || !selected.value[index]) {
+  getDualSelectedDropdownValues(field: SelectedField, index: number): string[] {
+    // Ensure field.value is an array
+    if (!Array.isArray(field.value) || !field.value[index]) {
       return [];
     }
 
-    const value = selected.value[index];
-
-    // If the value is already an object with id
-    if (typeof value === 'object' && value !== null && 'id' in value) {
-      return [value.id];
-    }
-
-    // If it's a simple string
-    if (typeof value === 'string') {
-      return [value];
-    }
-
-    return [];
+    // Return the ID in an array format for the dropdown
+    return field.value[index].id ? [field.value[index].id] : [];
   }
 
   // Handle single dropdown value change
@@ -625,29 +666,23 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
   // Handle dual dropdown value change
   onDualDropdownValueChange(selectedItems: DropdownItem[], index: number, dualIndex: number): void {
-    if (index < 0 || index >= this.selectedFields.length) {
-      console.error('Invalid index in onDualDropdownValueChange:', index);
-      return;
-    }
-    const selected = this.selectedFields[index];
+    if (!this.selectedFields[index]) return;
 
-    // Ensure value is always initialized as an array of length 2
-    if (!Array.isArray(selected.value) || selected.value.length !== 2) {
-      selected.value = [null, null];
+    // Ensure field.value is an array
+    if (!Array.isArray(this.selectedFields[index].value)) {
+      this.selectedFields[index].value = ['', ''];
     }
 
-    if (!selectedItems || selectedItems.length === 0) {
-      selected.value[dualIndex] = null;
-    } else if (selectedItems.length === 1) {
-      // Store the complete object to preserve language information
-      selected.value[dualIndex] = selectedItems[0];
+    if (selectedItems && selectedItems.length > 0) {
+      this.selectedFields[index].value[dualIndex] = selectedItems[0];
     } else {
-      // For multiple selections (unusual case)
-      selected.value[dualIndex] = selectedItems[0];
+      this.selectedFields[index].value[dualIndex] = null;
     }
 
-    // Mark as touched for validation
-    selected.valueTouched = true;
+    this.selectedFields[index].valueTouched = true;
+
+    // Save changes to localStorage
+    this.relationTableService.saveToLocalStorage(this.selectedFields);
   }
 
   // For similar operator field dropdown values

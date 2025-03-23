@@ -150,12 +150,14 @@
                                 </ng-container>
                                 <ng-template #dualTextInputs>
                                     <div class="dual-input-container">
-                                        <input type="text" [ngModel]="field.value && field.value[0] ? field.value[0] : ''" 
-                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
-                                               (blur)="field.valueTouched = true" />
-                                        <input type="text" [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
-                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
-                                               (blur)="field.valueTouched = true" />
+                                        <input type="text"
+                                            [ngModel]="field.value && field.value[0] ? field.value[0] : ''"
+                                            (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
+                                            (blur)="field.valueTouched = true" />
+                                        <input type="text"
+                                            [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
+                                            (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
+                                            (blur)="field.valueTouched = true" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">
@@ -177,12 +179,16 @@
                                 </ng-container>
                                 <ng-template #dualNumberInputs>
                                     <div class="dual-input-container">
-                                        <input type="number" [(ngModel)]="field.value[0]"
-                                            (blur)="field.valueTouched = true"
-                                            (input)="validateDualNumberInput($event, field, 0)" />
-                                        <input type="number" [(ngModel)]="field.value[1]"
-                                            (blur)="field.valueTouched = true"
-                                            (input)="validateDualNumberInput($event, field, 1)" />
+                                        <input type="number" 
+                                               [ngModel]="field.value && field.value[0] !== undefined ? field.value[0] : ''"
+                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
+                                               (blur)="field.valueTouched = true"
+                                               (input)="validateDualNumberInput($event, field, 0)" />
+                                        <input type="number" 
+                                               [ngModel]="field.value && field.value[1] !== undefined ? field.value[1] : ''"
+                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
+                                               (blur)="field.valueTouched = true"
+                                               (input)="validateDualNumberInput($event, field, 1)" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">
@@ -203,10 +209,14 @@
                                 </ng-container>
                                 <ng-template #dualDateInputs>
                                     <div class="dual-input-container">
-                                        <input type="date" [(ngModel)]="field.value[0]"
-                                            (blur)="field.valueTouched = true" />
-                                        <input type="date" [(ngModel)]="field.value[1]"
-                                            (blur)="field.valueTouched = true" />
+                                        <input type="date" 
+                                               [ngModel]="field.value && field.value[0] ? field.value[0] : ''"
+                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
+                                               (blur)="field.valueTouched = true" />
+                                        <input type="date" 
+                                               [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
+                                               (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
+                                               (blur)="field.valueTouched = true" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">
@@ -245,23 +255,25 @@
                                             <div class="display-text" *ngIf="field.value && field.value[0]">
                                                 {{ field.value[0] }}
                                             </div>
-                                            <button class="field-button" (click)="onFieldButtonClick(field, 0)"
-                                                [ngClass]="{'selected': field.value && field.value[0]}">
+                                            <button class="field-button" 
+                                                    (click)="field.value = initDualValue(field.value); onFieldButtonClick(field, 0)"
+                                                    [ngClass]="{'selected': field.value && field.value[0]}">
                                                 Select First
                                             </button>
                                         </div>
-
+                                
                                         <!-- Second button with display text -->
                                         <div class="button-container">
                                             <div class="display-text" *ngIf="field.value && field.value[1]">
                                                 {{ field.value[1] }}
                                             </div>
-                                            <button class="field-button" (click)="onFieldButtonClick(field, 1)"
-                                                [ngClass]="{'selected': field.value && field.value[1]}">
+                                            <button class="field-button" 
+                                                    (click)="field.value = initDualValue(field.value); onFieldButtonClick(field, 1)"
+                                                    [ngClass]="{'selected': field.value && field.value[1]}">
                                                 Select Second
                                             </button>
                                         </div>
-
+                                
                                         <!-- Dual validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">
@@ -291,13 +303,13 @@
                                             [isTableView]="false" [multiSelect]="false"
                                             [selectedValues]="getDualSelectedDropdownValues(field, 0)"
                                             [selectedLanguage]="selectedLanguage"
-                                            (selectedValuesChange)="onDualDropdownValueChange($event, i, 0)">
+                                            (selectedValuesChange)="field.value = initDualValue(field.value); onDualDropdownValueChange($event, i, 0)">
                                         </app-table-dropdown>
                                         <app-table-dropdown [data]="getValueControl(field).dropdownData"
                                             [isTableView]="false" [multiSelect]="false"
                                             [selectedValues]="getDualSelectedDropdownValues(field, 1)"
                                             [selectedLanguage]="selectedLanguage"
-                                            (selectedValuesChange)="onDualDropdownValueChange($event, i, 1)">
+                                            (selectedValuesChange)="field.value = initDualValue(field.value); onDualDropdownValueChange($event, i, 1)">
                                         </app-table-dropdown>
                                         <!-- Dual dropdown validation error -->
                                         <div class="validation-error"
