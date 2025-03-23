@@ -39,6 +39,7 @@ export class TableDropdownComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() selectedValues: string[] = [];
   @Input() tableColumns?: string[];
   @Output() selectedValuesChange = new EventEmitter<DropdownItem[]>();
+  @Input() showClearButton = false; // Show clear button for multi-select
 
   isOpen = false;
   selectedOptions: DropdownItem[] = [];

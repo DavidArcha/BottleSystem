@@ -33,7 +33,7 @@
         <div class="dropdown-section">
             <app-table-dropdown #systemTypeDropdown [data]="systemTypeData" [isTableView]="false"
                 [selectedValues]="selectedSystemTypeValueIds" [selectedLanguage]="currentLanguage" [multiSelect]="false"
-                (selectedValuesChange)="onSelectedSystemTypeValueChange($event)">
+                (selectedValuesChange)="onSelectedSystemTypeValueChange($event)" [showClearButton]="true">
             </app-table-dropdown>
         </div>
     </div>
