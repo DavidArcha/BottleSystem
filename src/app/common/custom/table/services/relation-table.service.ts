@@ -3,6 +3,7 @@ import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 import { BehaviorSubject, catchError, finalize, Observable, of } from 'rxjs';
 import { SearchService } from '../../../services/search.service';
 import { SelectedField } from '../../../interfaces/selectedFields.interface';
+import { ValueControlService } from './value-control.service';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,9 @@ export class RelationTableService {
   public isLoading$ = this.isLoadingSubject.asObservable();
   public error$ = this.errorSubject.asObservable();
 
-  constructor(private searchService: SearchService) { }
+  constructor(private searchService: SearchService,
+    private valueControlService: ValueControlService
+  ) { }
 
   /**
    * Load system type fields by language
@@ -102,7 +105,24 @@ export class RelationTableService {
    */
   getFromLocalStorage(): SelectedField[] {
     const saved = localStorage.getItem('selectedFields');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+
+    try {
+      const fields = JSON.parse(saved);
+
+      // Ensure all dual values are properly initialized
+      return fields.map((field: SelectedField) => {
+        // Use the injected service
+        const valueControl = this.valueControlService.getValueControl(field);
+        if (valueControl && valueControl.dual && (!field.value || !Array.isArray(field.value))) {
+          field.value = ['', ''];
+        }
+        return field;
+      });
+    } catch (e) {
+      console.error('Error parsing saved fields:', e);
+      return [];
+    }
   }
   /**
    * Check if parent field should display dropdown

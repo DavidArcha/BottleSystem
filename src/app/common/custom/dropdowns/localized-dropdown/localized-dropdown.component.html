@@ -1,0 +1,9 @@
+<div class="dropdown-container">
+    <select class="custom-dropdown" [ngModel]="selectedValue" (ngModelChange)="onValueChange($event)">
+      <option value="select">{{ selectedLanguage === 'de' ? 'Auswählen' : 'Select' }}</option>
+      <ng-container *ngFor="let option of options">
+        <option [value]="option.id">{{ option[selectedLanguage] }}</option>
+      </ng-container>
+    </select>
+    <span class="dropdown-arrow">&#9662;</span>
+  </div>

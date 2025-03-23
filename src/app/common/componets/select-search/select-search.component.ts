@@ -14,7 +14,7 @@ import { StateManagementService } from './services/state-management.service';
 import { FieldServiceService } from './services/field-service.service';
 import { StorageService } from './services/storage.service';
 import { SearchAccordionService } from './services/search-accordion.service';
-import { trackByFn } from './utils/search-utils';
+import { isFieldValid, trackByFn } from './utils/search-utils';
 import { SearchService } from '../../services/search.service';
 
 @Component({
@@ -33,7 +33,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   @ViewChildren('firstAccordion') firstAccordionSections!: QueryList<AccordionSectionComponent>;
   @ViewChildren('systemAccordion') systemAccordionSections!: QueryList<AccordionSectionComponent>;
   @ViewChild('systemTypeDropdown') systemTypeDropdown!: TableDropdownComponent;
-
+  @ViewChild('relationTable') relationTable: any;
   // Data properties
   public firstSystemFieldsData: AccordionItem[] = [];
   public systemFieldsAccData: AccordionItem[] = [];
@@ -458,6 +458,8 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectionService.addSavedGroup(groupField);
   }
 
+  
+
   // Handle delete field action in relation table
   onDeleteSelectedField(index: number): void {
     this.selectionService.deleteField(index);
@@ -529,6 +531,107 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     }
 
     this.changeDtr.detectChanges();
+  }
+
+  // Handle search button click - matches searchTable() in HTML
+  searchTable(): void {
+    const validationResult = this.relationTable.validateAllFields();
+    if (!validationResult.isValid) {
+      this.hasError = true;
+      this.errorMessage = `Please complete all required fields: ${validationResult.invalidFields.join(', ')}`;
+      return;
+    }
+
+    // Convert selected fields to search criteria format
+    const searchCriteria = this.selectionService.convertSelectedFieldsToSearchCriteria(this.selectedFields);
+    this.searchCriteria = searchCriteria;
+    console.log('Search criteria:', searchCriteria);
+
+    // Execute the search via the search service
+    this.isLoading = false;
+    this.loadingSubject.next(false);
+    this.cancelSave();
+  }
+
+  // Handle store button click - matches storeTable() in HTML
+  saveTable(): void {
+    // Check if there are fields to save
+    if (this.selectedFields.length === 0) {
+      this.hasError = true;
+      this.errorMessage = 'Please add fields before saving.';
+      return;
+    }
+
+    const validationResult = this.relationTable.validateAllFields();
+    if (!validationResult.isValid) {
+      this.hasError = true;
+      this.errorMessage = `Please complete all required fields: ${validationResult.invalidFields.join(', ')}`;
+      return;
+    }
+
+    // Show the save container
+    this.showSaveContainer = true;
+    this.isDeleteMode = false;
+    this.searchName = '';
+    this.currentGroupField = null;
+  }
+
+  // Save the current search
+  saveSearch(): void {
+    // Show loading state
+    this.isLoading = true;
+    this.loadingSubject.next(true);
+    this.saveFreshSearchData(this.searchName);
+    this.cancelSave();
+  }
+
+  // Add this new method to handle fresh search data saving
+  saveFreshSearchData(searchName: string): void {
+    // Validate the search name
+    if (!searchName || searchName.trim() === '') {
+      this.hasError = true;
+      this.errorMessage = 'Please enter a name for your search.';
+      return;
+    }
+
+    // Validate selected fields
+    if (this.selectedFields.length === 0) {
+      this.hasError = true;
+      this.errorMessage = 'Please add fields before saving.';
+      return;
+    }
+
+    // Step 1: Convert selectedFields to searchCriteria
+    const searchCriteria = this.selectionService.convertSelectedFieldsToSearchCriteria(this.selectedFields);
+
+    // Step 2: Create a searchRequest object with the criteria
+    const searchRequest: SearchRequest = {
+      title: {
+        id: '',
+        label: searchName.trim()
+      },
+      fields: searchCriteria
+    };
+
+    console.log('Search criteria:', searchRequest);
+
+    // Step 3: Save the search request
+    // this.searchProcessService.saveSearchRequest(searchRequest);
+    this.isLoading = false;
+    this.loadingSubject.next(false);
+    this.cancelSave();
+  }
+
+  // Cancel save/edit/delete operation
+  cancelSave(): void {
+    // Reset all state variables
+    this.showSaveContainer = false;
+    this.isEditMode = false;
+    this.isDeleteMode = false;
+    this.searchName = '';
+    this.currentGroupField = null;
+    this.hasError = false;
+    this.errorMessage = '';
   }
 
   /**

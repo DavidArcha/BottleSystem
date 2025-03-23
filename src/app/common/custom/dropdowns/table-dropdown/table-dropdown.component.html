@@ -4,8 +4,8 @@
         (click)="toggleDropdown()">
         <span id="{{ dropdownId }}-label" class="selected-value">{{ getDisplayText() }}</span>
 
-        <span *ngIf="(multiSelect ? selectedOptions.length > 0 : selectedValues.length > 0)" class="clear-icon"
-            role="button" tabindex="0" aria-label="Clear selection" (click)="clearSelection($event)"
+        <span *ngIf="showClearButton && (multiSelect ? selectedOptions.length > 0 : selectedValues.length > 0)"
+            class="clear-icon" role="button" tabindex="0" aria-label="Clear selection" (click)="clearSelection($event)"
             (keydown.enter)="clearSelection($event)" (keydown.space)="clearSelection($event)">✖</span>
 
         <span class="arrow" [ngClass]="{ 'open': isOpen }"></span>

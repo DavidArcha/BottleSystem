@@ -33,7 +33,7 @@
         <div class="dropdown-section">
             <app-table-dropdown #systemTypeDropdown [data]="systemTypeData" [isTableView]="false"
                 [selectedValues]="selectedSystemTypeValueIds" [selectedLanguage]="currentLanguage" [multiSelect]="false"
-                (selectedValuesChange)="onSelectedSystemTypeValueChange($event)">
+                (selectedValuesChange)="onSelectedSystemTypeValueChange($event)" [showClearButton]="true">
             </app-table-dropdown>
         </div>
     </div>
@@ -49,16 +49,25 @@
         (fieldSelected)="onFieldSelected($event)">
     </app-accordion-section>
 
-    <app-relation-table [selectedFields]="selectedFields" [selectedLanguage]="currentLanguage"
+    <app-relation-table #relationTable [selectedFields]="selectedFields" [selectedLanguage]="currentLanguage"
         (deleteSelectedField)="onDeleteSelectedField($event)" (searchSelectedField)="onSearchSelectedField($event)">
     </app-relation-table>
-
-
-
     <div class="action-buttons">
         <button [disabled]="selectedFields.length === 0" (click)="clearTable()">Clear</button>
-        <button [disabled]="selectedFields.length === 0">Search</button>
-        <button [disabled]="selectedFields.length === 0">Save</button>
+        <button [disabled]="selectedFields.length === 0" (click)="searchTable()">Search</button>
+        <button [disabled]="selectedFields.length === 0" (click)="saveTable()">Save</button>
     </div>
-
+    <!-- New save container -->
+    <div *ngIf="showSaveContainer" class="save-container">
+        <div class="form-group">
+            <label for="searchName">Search Name:</label>
+            <input type="text" id="searchName" [(ngModel)]="searchName" placeholder="Enter search name">
+        </div>
+        <div class="save-buttons">
+            <button *ngIf="!isEditMode" (click)="saveSearch()">Save</button>
+            <!-- <button *ngIf="isEditMode" (click)="saveAsSearch()">Save As</button>
+            <button *ngIf="isDeleteMode" (click)="confirmDelete()">Delete</button>
+            <button (click)="cancelSave()">Cancel</button> -->
+        </div>
+    </div>
 </div>

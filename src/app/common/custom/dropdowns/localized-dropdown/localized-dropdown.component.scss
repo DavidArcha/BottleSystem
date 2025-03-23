@@ -1,0 +1,43 @@
+/* Modernized Dropdown Styles */
+.dropdown-container {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    /* Adjust as needed */
+}
+
+.custom-dropdown {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    background-color: white;
+    font-size: 16px;
+    cursor: pointer;
+    appearance: none;
+    /* Remove default styles */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Dropdown Arrow */
+.dropdown-arrow {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 18px;
+    color: #888;
+}
+
+/* Hover & Focus Effects */
+.custom-dropdown:hover {
+    border-color: #007bff;
+}
+
+.custom-dropdown:focus {
+    border-color: #0056b3;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 91, 187, 0.5);
+}

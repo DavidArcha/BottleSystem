@@ -28,11 +28,17 @@ export class StateManagementService {
    * Load all state from storage
    */
   private loadStateFromStorage(): void {
-    this.showGroupDataOutsideSubject.next(
-      this.storageService.getBoolPreference('showGroupDataOutside', false)
-    );
-    this.loadSelectedSystemTypeValues();
-    this.loadSavedGroupFields();
+   // First load the showGroupDataOutside preference
+   const showGroupData = this.storageService.getBoolPreference('showGroupDataOutside', false);
+   this.showGroupDataOutsideSubject.next(showGroupData);
+   
+   // Always load selected system type values, as they're needed for basic functionality
+   this.loadSelectedSystemTypeValues();
+   
+   // Only load saved group fields if showGroupDataOutside is true
+   if (showGroupData) {
+     this.loadSavedGroupFields();
+   }
   }
 
   /**
