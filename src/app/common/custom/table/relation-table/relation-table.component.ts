@@ -88,16 +88,9 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       .subscribe(changes => {
         const newFields = changes['selectedFields'].currentValue as SelectedField[];
         if (newFields && newFields.length > 0) {
-          // Process any new fields that might need default operators
-          // This is a safety check in case any fields come in without default operators set
           newFields.forEach((field, index) => {
             if (!field.operator || field.operator.id === 'select') {
-              // This would be rare since SelectionService.addField should already set
-              // the default operator, but handling it here adds another layer of protection
               console.log('Field detected without proper operator, setting default operator:', field);
-
-              // Since we've already implemented default operator setting in SelectionService.addField,
-              // this should rarely be needed, but keeps the component resilient
             }
           });
         }
@@ -107,7 +100,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     this.ngOnChanges$.next(changes);
   }
-  
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -435,15 +428,17 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Mark the field as touched for validation
     field.parentTouched = true;
 
-    // If there are selected items, update the parent (for display when dropdown is hidden)
-    if (selectedItems.length > 0) {
-      field.parent = {
-        id: selectedItems[0].id,
-        label: selectedItems[0].label || ''
-      };
-    } else {
-      // Clear parent when no selection
-      field.parent = { id: '', label: '' };
+    // Only update the parent object if isParentArray is false
+    // For isParentArray=true, keep parent as empty object
+    if (!field.isParentArray) {
+      if (selectedItems.length > 0) {
+        field.parent = {
+          id: selectedItems[0].id,
+          label: selectedItems[0].label || ''
+        };
+      } else {
+        field.parent = { id: '', label: '' };
+      }
     }
     // Emit for parent component handling
     this.parentValueChange.emit({ selectedValues: selectedItems, index });
