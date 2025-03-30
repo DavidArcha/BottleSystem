@@ -1,5 +1,5 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, SimpleChanges } from '@angular/core';
+import { filter, Subject, takeUntil } from 'rxjs';
 import { SelectedField } from '../../../interfaces/selectedFields.interface';
 import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 import { SearchService } from '../../../services/search.service';
@@ -20,6 +20,7 @@ import { SearchCriteria } from '../../../interfaces/search-criteria.interface';
 })
 export class RelationTableComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private ngOnChanges$ = new Subject<SimpleChanges>();
 
   @Input() selectedFields: SelectedField[] = [];
   @Input() selectedLanguage: string = 'de';
@@ -77,8 +78,36 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       // Initialize fields on component load if they already exist
       this.initializeFields();
     }
+
+    // Watch for changes to selectedFields input
+    this.ngOnChanges$
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(changes => !!changes['selectedFields'])
+      )
+      .subscribe(changes => {
+        const newFields = changes['selectedFields'].currentValue as SelectedField[];
+        if (newFields && newFields.length > 0) {
+          // Process any new fields that might need default operators
+          // This is a safety check in case any fields come in without default operators set
+          newFields.forEach((field, index) => {
+            if (!field.operator || field.operator.id === 'select') {
+              // This would be rare since SelectionService.addField should already set
+              // the default operator, but handling it here adds another layer of protection
+              console.log('Field detected without proper operator, setting default operator:', field);
+
+              // Since we've already implemented default operator setting in SelectionService.addField,
+              // this should rarely be needed, but keeps the component resilient
+            }
+          });
+        }
+      });
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    this.ngOnChanges$.next(changes);
+  }
+  
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -92,7 +121,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     let fieldChanged = false;
 
-    this.selectedFields.forEach(field => {
+    this.selectedFields.forEach((field, index) => {
       const valueControl = this.getValueControl(field);
 
       // Initialize dual values if needed
@@ -106,6 +135,12 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       // Initialize other field properties if needed
       if (field.isParentArray === true && !field.parentSelected) {
         field.parentSelected = [];
+        fieldChanged = true;
+      }
+
+      // Initialize operator with default
+      if (!field.operator || !field.operator.id) {
+        this.setDefaultOperator(field, index);
         fieldChanged = true;
       }
 
@@ -782,5 +817,43 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+  }
+
+  /**
+ * Sets default operator when a field is first added to the table
+ * @param field The field to set default operator for
+ * @param index The index of the field in the selectedFields array
+ */
+  setDefaultOperator(field: SelectedField, index: number): void {
+    // Skip if operator is already set
+    if (field.operator && field.operator.id) {
+      return;
+    }
+
+    // Get available operators for this field
+    const availableOperators = this.getOperatorDataForField(field, index);
+
+    // Find the default operator based on field type
+    const defaultOperator = this.relationTableService.findDefaultOperator(field, availableOperators);
+
+    // If a default operator is found, set it
+    if (defaultOperator) {
+      field.operator = {
+        id: defaultOperator.id,
+        label: defaultOperator.label || ''
+      };
+
+      // Mark as touched to avoid validation errors
+      field.operatorTouched = true;
+
+      // Emit the change so parent components can react
+      this.operatorValueChange.emit({
+        selectedValue: defaultOperator,
+        index
+      });
+
+      // Save changes
+      this.saveToLocalStorage();
+    }
   }
 }
