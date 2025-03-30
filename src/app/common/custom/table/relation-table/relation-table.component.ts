@@ -62,6 +62,20 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Load initial data
     this.loadSystemTypeFields();
+    // Load saved fields from storage
+    const savedFields = this.relationTableService.getFromLocalStorage();
+    if (savedFields && savedFields.length > 0) {
+      // Merge with any fields already set (from inputs)
+      if (this.selectedFields.length === 0) {
+        this.selectedFields = savedFields;
+      } else {
+        // Update existing fields with saved values
+        this.selectedFields = this.selectedFields.map(field => {
+          const savedField = savedFields.find(sf => sf.rowid === field.rowid);
+          return savedField || field;
+        });
+      }
+    }
 
     // Subscribe to loading state
     this.relationTableService.isLoading$
@@ -181,6 +195,26 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       return ['', ''];
     }
     return value;
+  }
+
+  /**
+ * Handle dual text input value changes
+ * @param value The new input value
+ * @param field The field being updated
+ * @param index The array index (0 for first input, 1 for second input)
+ */
+  onDualTextValueChange(value: any, field: SelectedField, index: number): void {
+    // Make sure the field.value is initialized as an array
+    if (!Array.isArray(field.value)) {
+      field.value = ['', ''];
+    }
+
+    // Update the value at the specific index
+    field.value[index] = value;
+
+    // Mark as touched and save to localStorage
+    field.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   /**
@@ -386,7 +420,20 @@ export class RelationTableComponent implements OnInit, OnDestroy {
    * Save current selections to localStorage
    */
   saveToLocalStorage(): void {
-    this.relationTableService.saveToLocalStorage(this.selectedFields);
+    // Make sure all field values are properly formatted before saving
+    const fieldsToSave = this.selectedFields.map(field => {
+      const savedField = { ...field };
+
+      // Special handling for object values like dropdown selections
+      if (typeof field.value === 'object' && field.value !== null && !Array.isArray(field.value)) {
+        // Store both id and label to ensure complete restoration
+        savedField.value = { ...field.value };
+      }
+
+      return savedField;
+    });
+
+    this.relationTableService.saveToLocalStorage(fieldsToSave);
   }
 
   /**
@@ -606,7 +653,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Save changes to localStorage
     this.relationTableService.saveToLocalStorage(this.selectedFields);
   }
-
+  /**
+   * Handle text input value changes
+   * @param value The new value from the input
+   * @param field The field being updated
+   */
+  onTextValueChange(value: any, field: SelectedField): void {
+    field.value = value;
+    field.valueTouched = true;
+    this.saveToLocalStorage(); // Save to localStorage on each change
+  }
   // Get text to display when button is clicked
   getButtonDisplayText(selected: SelectedField, index?: number): string {
     // You can customize what text appears after the button is clicked
@@ -692,6 +748,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   // Handle dual dropdown value change
@@ -776,6 +833,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   // Handle change of the brand dropdown in similar operator
@@ -797,6 +855,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   // Handle click of button in similar operator case
@@ -812,6 +871,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   /**

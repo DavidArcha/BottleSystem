@@ -67,7 +67,8 @@
                                 <ng-container *ngSwitchCase="FieldType.Text">
                                     <div class="similar-field-container">
                                         <input type="text" [(ngModel)]="field.value[0]"
-                                            (blur)="field.valueTouched = true" />
+                                            (ngModelChange)="onTextValueChange($event, field)"
+                                            (blur)="field.valueTouched = true;saveToLocalStorage()" />
                                         <span class="similar-text">similar to</span>
                                     </div>
                                 </ng-container>
@@ -76,7 +77,7 @@
                                 <ng-container *ngSwitchCase="FieldType.Number">
                                     <div class="similar-field-container">
                                         <input type="number" [(ngModel)]="field.value[0]"
-                                            (blur)="field.valueTouched = true"
+                                            (blur)="field.valueTouched = true;saveToLocalStorage()"
                                             (input)="validateNumberInput($event, field)" />
                                         <span class="similar-text">similar to</span>
                                     </div>
@@ -86,7 +87,7 @@
                                 <ng-container *ngSwitchCase="FieldType.Date">
                                     <div class="similar-field-container">
                                         <input type="date" [(ngModel)]="field.value[0]"
-                                            (blur)="field.valueTouched = true" />
+                                            (blur)="field.valueTouched = true;saveToLocalStorage()" />
                                         <span class="similar-text">similar to</span>
                                     </div>
                                 </ng-container>
@@ -98,7 +99,8 @@
                                             [isTableView]="false" [multiSelect]="false"
                                             [selectedValues]="getSimilarFieldDropdownValues(field)"
                                             [selectedLanguage]="selectedLanguage"
-                                            (selectedValuesChange)="onSimilarFieldDropdownChange($event, i)" [showClearButton]="false">
+                                            (selectedValuesChange)="onSimilarFieldDropdownChange($event, i)"
+                                            [showClearButton]="false">
                                         </app-table-dropdown>
                                         <span class="similar-text">similar to</span>
                                     </div>
@@ -125,7 +127,8 @@
                                     [isTableView]="false" [multiSelect]="false"
                                     [selectedValues]="getSimilarBrandDropdownValues(field)"
                                     [selectedLanguage]="selectedLanguage"
-                                    (selectedValuesChange)="onSimilarBrandDropdownChange($event, i)" [showClearButton]="false">
+                                    (selectedValuesChange)="onSimilarBrandDropdownChange($event, i)"
+                                    [showClearButton]="false">
                                 </app-table-dropdown>
                             </div>
 
@@ -142,7 +145,9 @@
                             <!-- Text inputs -->
                             <ng-container *ngSwitchCase="FieldType.Text">
                                 <ng-container *ngIf="!getValueControl(field).dual; else dualTextInputs">
-                                    <input type="text" [(ngModel)]="field.value" (blur)="field.valueTouched = true" />
+                                    <input type="text" [(ngModel)]="field.value"
+                                        (ngModelChange)="onTextValueChange($event, field)"
+                                        (blur)="field.valueTouched = true;saveToLocalStorage()" />
                                     <!-- Single value validation error -->
                                     <div class="validation-error" *ngIf="field.valueTouched && !isValueValid(field)">
                                         Please enter a value.
@@ -152,11 +157,11 @@
                                     <div class="dual-input-container">
                                         <input type="text"
                                             [ngModel]="field.value && field.value[0] ? field.value[0] : ''"
-                                            (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
+                                            (ngModelChange)="onDualTextValueChange($event, field, 0)"
                                             (blur)="field.valueTouched = true" />
                                         <input type="text"
                                             [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
-                                            (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
+                                            (ngModelChange)="onDualTextValueChange($event, field, 1)"
                                             (blur)="field.valueTouched = true" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
@@ -182,12 +187,12 @@
                                         <input type="number"
                                             [ngModel]="field.value && field.value[0] !== undefined ? field.value[0] : ''"
                                             (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
-                                            (blur)="field.valueTouched = true"
+                                            (blur)="field.valueTouched = true; saveToLocalStorage()"
                                             (input)="validateDualNumberInput($event, field, 0)" />
                                         <input type="number"
                                             [ngModel]="field.value && field.value[1] !== undefined ? field.value[1] : ''"
                                             (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
-                                            (blur)="field.valueTouched = true"
+                                            (blur)="field.valueTouched = true; saveToLocalStorage()"
                                             (input)="validateDualNumberInput($event, field, 1)" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
@@ -201,7 +206,8 @@
                             <!-- Date inputs (can be expanded later) -->
                             <ng-container *ngSwitchCase="FieldType.Date">
                                 <ng-container *ngIf="!getValueControl(field).dual; else dualDateInputs">
-                                    <input type="date" [(ngModel)]="field.value" (blur)="field.valueTouched = true" />
+                                    <input type="date" [(ngModel)]="field.value"
+                                        (blur)="field.valueTouched = true;saveToLocalStorage()" />
                                     <!-- Single value validation error -->
                                     <div class="validation-error" *ngIf="field.valueTouched && !isValueValid(field)">
                                         Please select a date.
@@ -212,11 +218,11 @@
                                         <input type="date"
                                             [ngModel]="field.value && field.value[0] ? field.value[0] : ''"
                                             (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
-                                            (blur)="field.valueTouched = true" />
+                                            (blur)="field.valueTouched = true;saveToLocalStorage()" />
                                         <input type="date"
                                             [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
                                             (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
-                                            (blur)="field.valueTouched = true" />
+                                            (blur)="field.valueTouched = true;saveToLocalStorage()" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">
@@ -290,7 +296,8 @@
                                         [isTableView]="false" [multiSelect]="false"
                                         [selectedValues]="getSelectedDropdownValues(field)"
                                         [selectedLanguage]="selectedLanguage"
-                                        (selectedValuesChange)="onDropdownValueChange($event, i)" [showClearButton]="false">
+                                        (selectedValuesChange)="onDropdownValueChange($event, i)"
+                                        [showClearButton]="false">
                                     </app-table-dropdown>
                                     <!-- Dropdown validation error message -->
                                     <div class="validation-error" *ngIf="field.valueTouched && !isValueValid(field)">
@@ -303,13 +310,15 @@
                                             [isTableView]="false" [multiSelect]="false"
                                             [selectedValues]="getDualSelectedDropdownValues(field, 0)"
                                             [selectedLanguage]="selectedLanguage"
-                                            (selectedValuesChange)="field.value = initDualValue(field.value); onDualDropdownValueChange($event, i, 0)" [showClearButton]="false">
+                                            (selectedValuesChange)="field.value = initDualValue(field.value); onDualDropdownValueChange($event, i, 0)"
+                                            [showClearButton]="false">
                                         </app-table-dropdown>
                                         <app-table-dropdown [data]="getValueControl(field).dropdownData"
                                             [isTableView]="false" [multiSelect]="false"
                                             [selectedValues]="getDualSelectedDropdownValues(field, 1)"
                                             [selectedLanguage]="selectedLanguage"
-                                            (selectedValuesChange)="field.value = initDualValue(field.value); onDualDropdownValueChange($event, i, 1)" [showClearButton]="false">
+                                            (selectedValuesChange)="field.value = initDualValue(field.value); onDualDropdownValueChange($event, i, 1)"
+                                            [showClearButton]="false">
                                         </app-table-dropdown>
                                         <!-- Dual dropdown validation error -->
                                         <div class="validation-error"
