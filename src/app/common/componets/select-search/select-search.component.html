@@ -52,6 +52,68 @@
     <app-relation-table #relationTable [selectedFields]="selectedFields" [selectedLanguage]="currentLanguage"
         (deleteSelectedField)="onDeleteSelectedField($event)" (searchSelectedField)="onSearchSelectedField($event)">
     </app-relation-table>
+
+    <!-- New search-options container -->
+    <div class="search-options">
+        <div class="radio-group-1">
+            <h4>Search In:</h4>
+            <div class="radio-option">
+                <input type="radio" id="inArchival" name="searchLocation" value="inArchival"
+                    [(ngModel)]="searchLocation" [checked]="searchLocation === 'inArchival'">
+                <label for="inArchival">In Archival</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" id="intoSelection" name="searchLocation" value="intoSelection"
+                    [(ngModel)]="searchLocation" [disabled]="intoSelectionDisabled">
+                <label for="intoSelection">Into Selection</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" id="intoResult" name="searchLocation" value="intoResult"
+                    [(ngModel)]="searchLocation" [disabled]="intoResultDisabled">
+                <label for="intoResult">Into Result</label>
+            </div>
+        </div>
+
+        <div class="radio-group-2">
+            <h4>Search Method:</h4>
+            <div class="radio-option">
+                <input type="radio" id="newSearch" name="searchMethod" value="1" [(ngModel)]="searchMethod"
+                    [checked]="searchMethod === 'newSearch'">
+                <label for="newSearch">New Search</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" id="replace" name="searchMethod" value="replace" [(ngModel)]="searchMethod"
+                    [disabled]="replaceDisabled">
+                <label for="replace">Replace</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" id="merge" name="searchMethod" value="merge" [(ngModel)]="searchMethod"
+                    [disabled]="mergeDisabled">
+                <label for="merge">Merge</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" id="currentResult" name="searchMethod" value="currentResult"
+                    [(ngModel)]="searchMethod" [disabled]="currentResultDisabled">
+                <label for="currentResult">Current Result</label>
+            </div>
+        </div>
+
+        <div class="checkbox-group">
+            <h4>Language Options:</h4>
+            <div class="checkbox-option">
+                <input type="checkbox" id="de" name="de" [(ngModel)]="langDe">
+                <label for="de">de</label>
+            </div>
+            <div class="checkbox-option">
+                <input type="checkbox" id="en" name="en" [(ngModel)]="langEn">
+                <label for="en">en</label>
+            </div>
+            <div class="checkbox-option">
+                <input type="checkbox" id="caseSensitive" name="caseSensitive" [(ngModel)]="caseSensitive">
+                <label for="caseSensitive">Case Sensitive</label>
+            </div>
+        </div>
+    </div>
     <div class="action-buttons">
         <button [disabled]="selectedFields.length === 0" (click)="clearTable()">Clear</button>
         <button [disabled]="selectedFields.length === 0" (click)="searchTable()">Search</button>

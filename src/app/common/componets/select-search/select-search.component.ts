@@ -79,6 +79,18 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     return this.stateService.getShowGroupDataOutside();
   }
 
+  public searchLocation: string = 'inArchival';
+  public searchMethod: string = '1';
+  public langDe: boolean = true;  // German selected by default
+  public langEn: boolean = false; // English not selected by default
+  public caseSensitive: boolean = false;
+
+  // Replace the single searchOptionsDisabled with these variables:
+  public intoSelectionDisabled = true;
+  public intoResultDisabled = true;
+  public replaceDisabled = true;
+  public mergeDisabled = true;
+  public currentResultDisabled = true;
 
   constructor(
     private changeDtr: ChangeDetectorRef,
@@ -458,7 +470,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectionService.addSavedGroup(groupField);
   }
 
-  
+
 
   // Handle delete field action in relation table
   onDeleteSelectedField(index: number): void {
@@ -480,6 +492,17 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.storageService.clearStorageData();
     this.resetErrorState();
     this.resetUIElements();
+
+    // Reset all disabled states
+    this.intoSelectionDisabled = true;
+    this.intoResultDisabled = true;
+    this.replaceDisabled = true;
+    this.mergeDisabled = true;
+    this.currentResultDisabled = true;
+
+    // Reset to default selections
+    this.searchLocation = 'inArchival';
+    this.searchMethod = 'newSearch';
   }
 
   /**
@@ -535,6 +558,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
 
   // Handle search button click - matches searchTable() in HTML
   searchTable(): void {
+    // Existing validation logic...
     const validationResult = this.relationTable.validateAllFields();
     if (!validationResult.isValid) {
       this.hasError = true;
@@ -545,9 +569,36 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     // Convert selected fields to search criteria format
     const searchCriteria = this.selectionService.convertSelectedFieldsToSearchCriteria(this.selectedFields);
     this.searchCriteria = searchCriteria;
+
+    // Include search options in the search - use individual language variables
+    const searchOptions = {
+      location: this.searchLocation,
+      method: this.searchMethod,
+      languages: {
+        de: this.langDe,  // Use the individual variable instead of the object property
+        en: this.langEn   // Use the individual variable instead of the object property
+      },
+      caseSensitive: this.caseSensitive
+    };
+
     console.log('Search criteria:', searchCriteria);
+    console.log('Search options:', searchOptions);
+
+    // Enable specific radio buttons based on conditions
+    // For now, as per temporary test requirement:
+    // - Enable "Into Selection" 
+    // - Keep "Into Result" disabled
+    this.intoSelectionDisabled = false;
+    this.intoResultDisabled = true;
+
+    // For radio-group-2, enable some options as an example
+    this.replaceDisabled = false;
+    this.mergeDisabled = false;
+    this.currentResultDisabled = true;
 
     // Execute the search via the search service
+    // ... existing search logic ...
+
     this.isLoading = false;
     this.loadingSubject.next(false);
     this.cancelSave();
