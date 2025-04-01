@@ -667,7 +667,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     console.log('Search criteria:', searchRequest);
 
     // Step 3: Save the search request
-    // this.searchProcessService.saveSearchRequest(searchRequest);
+    this.searchService.saveSearchRequest(searchRequest);
     this.isLoading = false;
     this.loadingSubject.next(false);
     this.cancelSave();

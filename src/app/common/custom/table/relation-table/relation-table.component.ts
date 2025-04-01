@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, SimpleChanges } from '@angular/core';
-import { filter, Subject, takeUntil } from 'rxjs';
+import { filter, finalize, Subject, takeUntil } from 'rxjs';
 import { SelectedField } from '../../../interfaces/selectedFields.interface';
 import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 import { SearchService } from '../../../services/search.service';
@@ -57,7 +57,8 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       .subscribe(lang => {
         this.selectedLanguage = lang;
         this.loadSystemTypeFields();
-        this.clearOperatorDataCache(); // Clear cache on language change
+        this.clearOperatorDataCache();
+        this.initializeValueControlData();// Clear cache on language change
       });
 
     // Load initial data
@@ -497,16 +498,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
  */
   private initializeValueControlData(): void {
     // Load brand data example
-    // this.searchService.getBrandData().pipe(takeUntil(this.destroy$))
-    //   .subscribe(data => {
-    //     this.valueControlService.setBrandData(data);
-    //   });
+    this.searchService.getBrandsData(this.selectedLanguage).pipe(takeUntil(this.destroy$))
+      .subscribe(data => {
+        this.valueControlService.setBrandData(data);
+      });
 
     // // Load state data example
-    // this.searchService.getStateData().pipe(takeUntil(this.destroy$))
-    //   .subscribe(data => {
-    //     this.valueControlService.setStateData(data);
-    //   });
+    this.searchService.getStateData(this.selectedLanguage).pipe(takeUntil(this.destroy$))
+      .subscribe(data => {
+        this.valueControlService.setStateData(data);
+      });
 
     // Set dropdown data mapping
     this.valueControlService.setDropdownDataMapping({
@@ -524,8 +525,8 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if value column should be displayed
-   */
+  * Check if value column should be displayed
+  */
   shouldShowValueColumn(): boolean {
     return this.selectedFields.some(field => {
       const valueControl = this.getValueControl(field);

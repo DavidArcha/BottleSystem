@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
+import { DropdownDataMapping, FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
 import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 
 import { DualOperators, NoValueOperators, OperatorType } from '../../../enums/operator-types.enum';
@@ -13,11 +13,13 @@ export class ValueControlService {
   private brandData: DropdownItem[] = [];
   private stateData: DropdownItem[] = [];
 
-  // Dropdown data mapping
+  // Private mapping with defaults from enum
   private dropdownDataMapping: { [key: string]: string } = {
-    'default': 'stateData',
-    // Add field ID to data source mappings as needed
+    ...DropdownDataMapping
   };
+
+  private brandDataLoading = false;
+  private stateDataLoading = false;
 
   constructor() {
     // Initialize with empty arrays, data should be loaded elsewhere
@@ -175,9 +177,12 @@ export class ValueControlService {
             return 'date';
           case FieldType.Time:
             return 'time';
+          case FieldType.Button:
+            return 'button';
           case FieldType.Text:
             return 'string';
           case FieldType.Dropdown:
+            return 'dropdown';
           default:
             return 'string';
         }

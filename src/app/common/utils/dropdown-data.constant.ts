@@ -24,7 +24,6 @@ export const DROPDOWN_DATA = {
         { "id": "ends_on", "en": "Ends on", "de": "Endet am" },
         { "id": "between", "en": "between", "de": "zwischen" },
         { "id": "not_between", "en": "not between", "de": "nicht zwischen" },
-        { "id": "contains_date", "en": "Contains date", "de": "Enthält Datum" },
         { "id": "similar", "en": "similar", "de": "similar-de" },
     ],
     "dateOperations": [
@@ -64,8 +63,6 @@ export const DROPDOWN_DATA = {
         { "id": "not_equals", "en": "not equals", "de": "ungleich" },
         { "id": "empty", "en": "empty", "de": "leer" },
         { "id": "not_empty", "en": "not empty", "de": "nicht leer" },
-        { "id": "contains", "en": "Contains", "de": "Enthält" },
-        { "id": "starts_with", "en": "Start-With", "de": "" },
         { "id": "between", "en": "between", "de": "zwischen" },
         { "id": "not_between", "en": "not between", "de": "nicht zwischen" },
         { "id": "similar", "en": "similar", "de": "similar-de" },
