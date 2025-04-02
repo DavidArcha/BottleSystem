@@ -1,0 +1,93 @@
+{
+  "groupTitle": {
+    "id": "saved_group",
+    "label": "Saved Groups"
+  },
+  "groupFields": [
+    {
+      "title": {
+        "id": 28,
+        "label": "TestingDE"
+      },
+      "fields": [
+        {
+          "rowId": "781QGWJ",
+          "parent": {
+            "id": "",
+            "label": ""
+          },
+          "parentSelected": [
+            {
+              "id": "1",
+              "label": "Windows-EN"
+            }
+          ],
+          "field": {
+            "id": "Age",
+            "label": "Age"
+          },
+          "operator": {
+            "id": "empty",
+            "label": "empty"
+          },
+          "value": null
+        }
+      ]
+    },
+    {
+      "title": {
+        "id": 29,
+        "label": "TestingEn-123"
+      },
+      "fields": [
+        {
+          "rowId": "9DD46UT",
+          "parent": {
+            "id": "1",
+            "label": "Windows-EN"
+          },
+          "parentSelected": [],
+          "field": {
+            "id": "Age",
+            "label": "Age"
+          },
+          "operator": {
+            "id": "empty",
+            "label": "empty"
+          },
+          "value": null
+        },
+        {
+          "rowId": "HXZNVT4",
+          "parent": {
+            "id": "",
+            "label": ""
+          },
+          "parentSelected": [
+            {
+              "id": "1",
+              "label": "Windows-EN"
+            },
+            {
+              "id": "3",
+              "label": "Google-EN"
+            },
+            {
+              "id": "2",
+              "label": "Linux-EN"
+            }
+          ],
+          "field": {
+            "id": "Age",
+            "label": "Age"
+          },
+          "operator": {
+            "id": "equals",
+            "label": "equals"
+          },
+          "value": "123"
+        }
+      ]
+    }
+  ]
+}

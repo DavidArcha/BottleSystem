@@ -1,6 +1,3 @@
-/**********************************************
- * Overlay Panel & Backdrop
- **********************************************/
 
 /* Ensures the overlay panel sits on top of other elements */
 :host ::ng-deep .cdk-overlay-pane {
@@ -14,9 +11,6 @@
     background: transparent !important;
 }
 
-/**********************************************
-   * Dropdown Container & Toggle
-   **********************************************/
 .dropdown-container {
     position: relative;
     display: inline-block;
@@ -64,9 +58,6 @@
     transform: rotate(-135deg);
 }
 
-/**********************************************
-   * Dropdown Content (Rendered in Overlay)
-   **********************************************/
 .dropdown-content {
     background-color: #fff;
     border: 1px solid #ccc;
@@ -99,9 +90,6 @@
     margin: 0;
 }
 
-/**********************************************
-   * List View
-   **********************************************/
 .list-view {
     list-style: none;
     margin: 0;
@@ -130,9 +118,6 @@
     margin-right: 0.5rem;
 }
 
-/**********************************************
-   * Table View
-   **********************************************/
 .table-view {
     width: 100%;
     border-collapse: collapse;
@@ -163,18 +148,12 @@
     border-bottom: 1px solid #eee;
 }
 
-/**********************************************
-   * No Results
-   **********************************************/
 .no-results {
     padding: 0.5rem;
     text-align: center;
     color: #666;
 }
 
-/**********************************************
-   * Search container spacing
-   **********************************************/
 .search-container {
     margin-bottom: 0.5rem;
     display: flex;
