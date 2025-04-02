@@ -115,8 +115,13 @@ export class SearchService {
     return this.http.get(`${this.apiUrl}/GetSearch/${gSearchId}`);
   }
 
-  getAllSavedSearches(): Observable<any> {
-    let url = `${this.apiUrl}${RestAPICallUrl.getAllSavedSearches}`;
-    return this.http.get(url);
+  // getAllSavedSearches(): Observable<any> {
+  //   let url = `${this.apiUrl}${RestAPICallUrl.getAllSavedSearches}`;
+  //   return this.http.get(url);
+  // }
+
+  getAllSavedSearches(): Observable<any> {    
+    // Get data from local JSON file
+    return this.http.get('assets/json/SavedSearchSample.json');
   }
 }
