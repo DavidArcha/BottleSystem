@@ -58,6 +58,7 @@ export class ValueControlService {
       isSimilar: false,
       similarDropdownData: [] as DropdownItem[]
     };
+    console.log('Selected field:', selected);
 
     // Only show controls if a valid operator is selected
     if (!selected.operator?.id || selected.operator.id === 'select') {
@@ -131,6 +132,7 @@ export class ValueControlService {
    * Convert field type to control type
    */
   private getControlType(fieldType: string): FieldType {
+    console.log('Field type:', fieldType);
     switch (fieldType) {
       case 'date':
         return FieldType.Date;
@@ -162,11 +164,12 @@ export class ValueControlService {
   getFieldType(field: SelectedField): string {
     if (!field.field || !field.field.id) return 'string'; // Default to string
 
-    const fieldId = field.field.id;
+    const fieldId = String(field.field.id); // Ensure it's a string for comparison
 
     // Check field type mapping
     for (const [key, value] of Object.entries(FieldTypeMapping)) {
-      if (key.includes(fieldId)) {
+      // Use exact equality instead of includes
+      if (key === fieldId) {
         // Map FieldType enum to string type
         switch (value) {
           case FieldType.Bool:

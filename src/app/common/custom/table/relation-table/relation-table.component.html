@@ -59,7 +59,6 @@
                 <td class="value" *ngIf="getValueControl(field).show && isOperatorValid(field)">
                     <!-- Special case for similar operator -->
                     <ng-container *ngIf="getValueControl(field).isSimilar; else regularControls">
-                        {{getValueControl(field).isSimilar}}
                         <div class="similar-container">
                             <!-- First part: Regular control based on field type -->
                             <ng-container [ngSwitch]="getValueControl(field).type">
@@ -125,9 +124,9 @@
                             <div class="similar-brand-container">
                                 <app-table-dropdown [data]="getValueControl(field).similarDropdownData"
                                     [isTableView]="false" [multiSelect]="false"
-                                    [selectedValues]="getSimilarBrandDropdownValues(field)"
+                                    [selectedValues]="field.value && field.value[1] ? [field.value[1]] : []"
                                     [selectedLanguage]="selectedLanguage"
-                                    (selectedValuesChange)="onSimilarBrandDropdownChange($event, i)"
+                                    (selectedValuesChange)="field.value = field.value || ['', '']; onSimilarBrandDropdownChange($event, i)"
                                     [showClearButton]="false">
                                 </app-table-dropdown>
                             </div>

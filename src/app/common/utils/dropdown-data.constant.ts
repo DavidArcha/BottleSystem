@@ -15,7 +15,7 @@ export const DROPDOWN_DATA = {
         { "id": "no", "en": "No", "de": "Nein" }
     ],
     "numberOperations": [
-        { "id": "equals", "en": "equals", "de": "gleich" },
+        { "id": "equals", "en": "equalsN", "de": "gleich" },
         { "id": "not_equals", "en": "not equals", "de": "ungleich" },
         { "id": "empty", "en": "empty", "de": "leer" },
         { "id": "not_empty", "en": "not empty", "de": "nicht leer" },
@@ -27,7 +27,7 @@ export const DROPDOWN_DATA = {
         { "id": "similar", "en": "similar", "de": "similar-de" },
     ],
     "dateOperations": [
-        { "id": "equals", "en": "equals", "de": "gleich" },
+        { "id": "equals", "en": "equalsDT", "de": "gleich" },
         { "id": "not_equals", "en": "not equals", "de": "ungleich" },
         { "id": "empty", "en": "empty", "de": "leer" },
         { "id": "not_empty", "en": "not empty", "de": "nicht leer" },
@@ -40,7 +40,7 @@ export const DROPDOWN_DATA = {
         { "id": "similar", "en": "similar", "de": "similar-de" },
     ],
     "timeOperations": [
-        { "id": "equals", "en": "equals", "de": "gleich" },
+        { "id": "equals", "en": "equalsTT", "de": "gleich" },
         { "id": "not_equals", "en": "not equals", "de": "ungleich" },
         { "id": "empty", "en": "empty", "de": "leer" },
         { "id": "not_empty", "en": "not empty", "de": "nicht leer" },
@@ -53,13 +53,13 @@ export const DROPDOWN_DATA = {
         { "id": "similar", "en": "similar", "de": "similar-de" },
     ],
     "tOperations": [
-        { "id": "equals", "en": "equals", "de": "gleich" },
+        { "id": "equals", "en": "equalsTo", "de": "gleich" },
         { "id": "not_equals", "en": "not equals", "de": "ungleich" },
         { "id": "empty", "en": "empty", "de": "leer" },
         { "id": "not_empty", "en": "not empty", "de": "nicht leer" }
     ],
     "stringOperations": [
-        { "id": "equals", "en": "equals", "de": "gleich" },
+        { "id": "equals", "en": "equalsST", "de": "gleich" },
         { "id": "not_equals", "en": "not equals", "de": "ungleich" },
         { "id": "empty", "en": "empty", "de": "leer" },
         { "id": "not_empty", "en": "not empty", "de": "nicht leer" },

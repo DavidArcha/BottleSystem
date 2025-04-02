@@ -10,11 +10,11 @@ export enum FieldType {
 }
 
 // Sets of fields
-const NumericFields = ['Age', 'Phone', 'NO-EN-1', 'NO-EN-2', 'NO-EN-3', 'NO-EN-4', 'NO-EN-5', 'NO-EN-6', 'NO-EN-7', 'NO-EN-8', 'NO-EN-9', 'NO-EN-10'];
-const StringFields = ['Name', 'Image', 'ST-EN-1', 'ST-EN-2', 'ST-EN-3', 'ST-EN-4', 'ST-EN-5', 'ST-EN-6', 'ST-EN-7', 'ST-EN-8', 'ST-EN-9', 'ST-EN-10'];
-const DateFields = ['Document', 'DT-EN-1', 'DT-EN-2', 'DT-EN-3', 'DT-EN-4', 'DT-EN-5', 'DT-EN-6', 'DT-EN-7', 'DT-EN-8', 'DT-EN-9', 'DT-EN-10'];
-const DropdownFields = ['PinCode', 'DD-EN-1', 'DD-EN-2', 'DD-EN-3', 'DD-EN-4', 'DD-EN-5', 'DD-EN-6', 'DD-EN-7', 'DD-EN-8', 'DD-EN-9', 'DD-EN-10'];
-const buttonFields = ['BT-EN-1', 'BT-EN-2', 'BT-EN-3', 'BT-EN-4', 'BT-EN-5', 'BT-EN-6', 'BT-EN-7', 'BT-EN-8', 'BT-EN-9', 'BT-EN-10'];
+const NumericFields = ['Age', 'Phone', '-21', '-22', '-23', '-24', '-25', '26', '27', '28', '29', '30'];
+const StringFields = ['Name', 'Image', '-11', '-12', '-13', '-14', '15', '16', '17', '18', '19', '20'];
+const DateFields = ['Document', 'DT-EN-1', '-42', 'DT-EN-3', 'DT-EN-4', '45', 'DT-EN-6', '47', 'DT-EN-8', '49', 'DT-EN-10'];
+const DropdownFields = ['PinCode', '-31', '-32', '-33', '-34', '-35', '36', '37', '38', '39', '40'];
+const buttonFields = ['-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9', '-10'];
 
 // Numeric fields set
 export const NumericFieldMapping: { [key: string]: FieldType } = Object.fromEntries(
