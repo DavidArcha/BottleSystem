@@ -90,9 +90,25 @@ export class SearchService {
   saveSearchRequest(searchRequest: any): Observable<any> {
     const formData = new FormData();
     formData.append('searchRequest', JSON.stringify(searchRequest));
+    console.log('FormData:', formData); // Log the FormData object
     let url = `${this.apiUrl}${RestAPICallUrl.saveSearchData}`;
+    console.log('URL:', url); // Log the URL
     return this.http.post(url, formData);
   }
+
+  // saveSearchRequest(searchRequest: any): Observable<any> {
+  //   // Convert the entire object to a JSON string
+  //   const jsonString = JSON.stringify(searchRequest);
+
+  //   // Create request options to send as plain text
+  //   const options = {
+  //     headers: { 'Content-Type': 'application/json' }
+  //   };
+
+  //   // Send directly as a JSON string in the body
+  //   let url = `${this.apiUrl}${RestAPICallUrl.saveSearchData}`;
+  //   return this.http.post(url, jsonString, options);
+  // }
 
   // Retrieves the saved search request by gSearchId
   getSearch(gSearchId: number): Observable<any> {

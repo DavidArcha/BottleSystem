@@ -4,6 +4,8 @@ import { BehaviorSubject, catchError, finalize, Observable, of } from 'rxjs';
 import { SearchService } from '../../../services/search.service';
 import { SelectedField } from '../../../interfaces/selectedFields.interface';
 import { ValueControlService } from './value-control.service';
+import { FieldTypeMapping } from '../../../enums/field-types.enum';
+import { DefaultOperatorsByFieldType } from '../../../enums/operator-types.enum';
 
 @Injectable({
   providedIn: 'root'
@@ -212,6 +214,41 @@ export class RelationTableService {
 
       return updatedField;
     });
+  }
+
+  /**
+ * Determines the default operator to use based on field type and available operators
+ * @param field The selected field
+ * @param availableOperators List of operators available for this field
+ * @returns The default operator to select, or null if no match
+ */
+  findDefaultOperator(field: SelectedField, availableOperators: DropdownItem[]): DropdownItem | null {
+    if (!field || !field.field || !availableOperators || availableOperators.length === 0) {
+      return null;
+    }
+
+    // Get field type
+    let fieldType: string;
+    if (field.field.id && FieldTypeMapping[field.field.id]) {
+      fieldType = FieldTypeMapping[field.field.id];
+    } else {
+      // Default to text if unknown field type
+      fieldType = 'default';
+    }
+
+    // Get the list of default operators for this field type
+    const defaultOperators = DefaultOperatorsByFieldType[fieldType] || DefaultOperatorsByFieldType['default'];
+
+    // Find the first matching operator from the priority list
+    for (const defaultOp of defaultOperators) {
+      const matchingOperator = availableOperators.find(op => op.id === defaultOp);
+      if (matchingOperator) {
+        return matchingOperator;
+      }
+    }
+
+    // If no match found, return null (will not pre-select anything)
+    return null;
   }
 
 }

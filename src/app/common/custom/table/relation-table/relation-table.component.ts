@@ -1,5 +1,5 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, SimpleChanges } from '@angular/core';
+import { filter, finalize, Subject, takeUntil } from 'rxjs';
 import { SelectedField } from '../../../interfaces/selectedFields.interface';
 import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 import { SearchService } from '../../../services/search.service';
@@ -20,6 +20,7 @@ import { SearchCriteria } from '../../../interfaces/search-criteria.interface';
 })
 export class RelationTableComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private ngOnChanges$ = new Subject<SimpleChanges>();
 
   @Input() selectedFields: SelectedField[] = [];
   @Input() selectedLanguage: string = 'de';
@@ -56,11 +57,26 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       .subscribe(lang => {
         this.selectedLanguage = lang;
         this.loadSystemTypeFields();
-        this.clearOperatorDataCache(); // Clear cache on language change
+        this.clearOperatorDataCache();
+        this.initializeValueControlData();// Clear cache on language change
       });
 
     // Load initial data
     this.loadSystemTypeFields();
+    // Load saved fields from storage
+    const savedFields = this.relationTableService.getFromLocalStorage();
+    if (savedFields && savedFields.length > 0) {
+      // Merge with any fields already set (from inputs)
+      if (this.selectedFields.length === 0) {
+        this.selectedFields = savedFields;
+      } else {
+        // Update existing fields with saved values
+        this.selectedFields = this.selectedFields.map(field => {
+          const savedField = savedFields.find(sf => sf.rowid === field.rowid);
+          return savedField || field;
+        });
+      }
+    }
 
     // Subscribe to loading state
     this.relationTableService.isLoading$
@@ -77,6 +93,27 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       // Initialize fields on component load if they already exist
       this.initializeFields();
     }
+
+    // Watch for changes to selectedFields input
+    this.ngOnChanges$
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(changes => !!changes['selectedFields'])
+      )
+      .subscribe(changes => {
+        const newFields = changes['selectedFields'].currentValue as SelectedField[];
+        if (newFields && newFields.length > 0) {
+          newFields.forEach((field, index) => {
+            if (!field.operator || field.operator.id === 'select') {
+              console.log('Field detected without proper operator, setting default operator:', field);
+            }
+          });
+        }
+      });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    this.ngOnChanges$.next(changes);
   }
 
   ngOnDestroy(): void {
@@ -92,7 +129,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     let fieldChanged = false;
 
-    this.selectedFields.forEach(field => {
+    this.selectedFields.forEach((field, index) => {
       const valueControl = this.getValueControl(field);
 
       // Initialize dual values if needed
@@ -106,6 +143,12 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       // Initialize other field properties if needed
       if (field.isParentArray === true && !field.parentSelected) {
         field.parentSelected = [];
+        fieldChanged = true;
+      }
+
+      // Initialize operator with default
+      if (!field.operator || !field.operator.id) {
+        this.setDefaultOperator(field, index);
         fieldChanged = true;
       }
 
@@ -153,6 +196,26 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       return ['', ''];
     }
     return value;
+  }
+
+  /**
+ * Handle dual text input value changes
+ * @param value The new input value
+ * @param field The field being updated
+ * @param index The array index (0 for first input, 1 for second input)
+ */
+  onDualTextValueChange(value: any, field: SelectedField, index: number): void {
+    // Make sure the field.value is initialized as an array
+    if (!Array.isArray(field.value)) {
+      field.value = ['', ''];
+    }
+
+    // Update the value at the specific index
+    field.value[index] = value;
+
+    // Mark as touched and save to localStorage
+    field.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   /**
@@ -358,7 +421,20 @@ export class RelationTableComponent implements OnInit, OnDestroy {
    * Save current selections to localStorage
    */
   saveToLocalStorage(): void {
-    this.relationTableService.saveToLocalStorage(this.selectedFields);
+    // Make sure all field values are properly formatted before saving
+    const fieldsToSave = this.selectedFields.map(field => {
+      const savedField = { ...field };
+
+      // Special handling for object values like dropdown selections
+      if (typeof field.value === 'object' && field.value !== null && !Array.isArray(field.value)) {
+        // Store both id and label to ensure complete restoration
+        savedField.value = { ...field.value };
+      }
+
+      return savedField;
+    });
+
+    this.relationTableService.saveToLocalStorage(fieldsToSave);
   }
 
   /**
@@ -400,15 +476,17 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Mark the field as touched for validation
     field.parentTouched = true;
 
-    // If there are selected items, update the parent (for display when dropdown is hidden)
-    if (selectedItems.length > 0) {
-      field.parent = {
-        id: selectedItems[0].id,
-        label: selectedItems[0].label || ''
-      };
-    } else {
-      // Clear parent when no selection
-      field.parent = { id: '', label: '' };
+    // Only update the parent object if isParentArray is false
+    // For isParentArray=true, keep parent as empty object
+    if (!field.isParentArray) {
+      if (selectedItems.length > 0) {
+        field.parent = {
+          id: selectedItems[0].id,
+          label: selectedItems[0].label || ''
+        };
+      } else {
+        field.parent = { id: '', label: '' };
+      }
     }
     // Emit for parent component handling
     this.parentValueChange.emit({ selectedValues: selectedItems, index });
@@ -420,16 +498,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
  */
   private initializeValueControlData(): void {
     // Load brand data example
-    // this.searchService.getBrandData().pipe(takeUntil(this.destroy$))
-    //   .subscribe(data => {
-    //     this.valueControlService.setBrandData(data);
-    //   });
+    this.searchService.getBrandsData(this.selectedLanguage).pipe(takeUntil(this.destroy$))
+      .subscribe(data => {
+        this.valueControlService.setBrandData(data);
+      });
 
     // // Load state data example
-    // this.searchService.getStateData().pipe(takeUntil(this.destroy$))
-    //   .subscribe(data => {
-    //     this.valueControlService.setStateData(data);
-    //   });
+    this.searchService.getStateData(this.selectedLanguage).pipe(takeUntil(this.destroy$))
+      .subscribe(data => {
+        this.valueControlService.setStateData(data);
+      });
 
     // Set dropdown data mapping
     this.valueControlService.setDropdownDataMapping({
@@ -447,8 +525,8 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if value column should be displayed
-   */
+  * Check if value column should be displayed
+  */
   shouldShowValueColumn(): boolean {
     return this.selectedFields.some(field => {
       const valueControl = this.getValueControl(field);
@@ -576,7 +654,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Save changes to localStorage
     this.relationTableService.saveToLocalStorage(this.selectedFields);
   }
-
+  /**
+   * Handle text input value changes
+   * @param value The new value from the input
+   * @param field The field being updated
+   */
+  onTextValueChange(value: any, field: SelectedField): void {
+    field.value = value;
+    field.valueTouched = true;
+    this.saveToLocalStorage(); // Save to localStorage on each change
+  }
   // Get text to display when button is clicked
   getButtonDisplayText(selected: SelectedField, index?: number): string {
     // You can customize what text appears after the button is clicked
@@ -662,6 +749,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   // Handle dual dropdown value change
@@ -746,6 +834,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   // Handle change of the brand dropdown in similar operator
@@ -767,6 +856,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
   }
 
   // Handle click of button in similar operator case
@@ -782,5 +872,44 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Mark as touched for validation
     selected.valueTouched = true;
+    this.saveToLocalStorage();
+  }
+
+  /**
+ * Sets default operator when a field is first added to the table
+ * @param field The field to set default operator for
+ * @param index The index of the field in the selectedFields array
+ */
+  setDefaultOperator(field: SelectedField, index: number): void {
+    // Skip if operator is already set
+    if (field.operator && field.operator.id) {
+      return;
+    }
+
+    // Get available operators for this field
+    const availableOperators = this.getOperatorDataForField(field, index);
+
+    // Find the default operator based on field type
+    const defaultOperator = this.relationTableService.findDefaultOperator(field, availableOperators);
+
+    // If a default operator is found, set it
+    if (defaultOperator) {
+      field.operator = {
+        id: defaultOperator.id,
+        label: defaultOperator.label || ''
+      };
+
+      // Mark as touched to avoid validation errors
+      field.operatorTouched = true;
+
+      // Emit the change so parent components can react
+      this.operatorValueChange.emit({
+        selectedValue: defaultOperator,
+        index
+      });
+
+      // Save changes
+      this.saveToLocalStorage();
+    }
   }
 }

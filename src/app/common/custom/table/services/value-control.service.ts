@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
+import { DropdownDataMapping, FieldType, FieldTypeMapping } from '../../../enums/field-types.enum';
 import { DropdownItem } from '../../../interfaces/table-dropdown.interface';
 
 import { DualOperators, NoValueOperators, OperatorType } from '../../../enums/operator-types.enum';
@@ -13,11 +13,13 @@ export class ValueControlService {
   private brandData: DropdownItem[] = [];
   private stateData: DropdownItem[] = [];
 
-  // Dropdown data mapping
+  // Private mapping with defaults from enum
   private dropdownDataMapping: { [key: string]: string } = {
-    'default': 'stateData',
-    // Add field ID to data source mappings as needed
+    ...DropdownDataMapping
   };
+
+  private brandDataLoading = false;
+  private stateDataLoading = false;
 
   constructor() {
     // Initialize with empty arrays, data should be loaded elsewhere
@@ -56,6 +58,7 @@ export class ValueControlService {
       isSimilar: false,
       similarDropdownData: [] as DropdownItem[]
     };
+    console.log('Selected field:', selected);
 
     // Only show controls if a valid operator is selected
     if (!selected.operator?.id || selected.operator.id === 'select') {
@@ -129,6 +132,7 @@ export class ValueControlService {
    * Convert field type to control type
    */
   private getControlType(fieldType: string): FieldType {
+    console.log('Field type:', fieldType);
     switch (fieldType) {
       case 'date':
         return FieldType.Date;
@@ -160,11 +164,12 @@ export class ValueControlService {
   getFieldType(field: SelectedField): string {
     if (!field.field || !field.field.id) return 'string'; // Default to string
 
-    const fieldId = field.field.id;
+    const fieldId = String(field.field.id); // Ensure it's a string for comparison
 
     // Check field type mapping
     for (const [key, value] of Object.entries(FieldTypeMapping)) {
-      if (key.includes(fieldId)) {
+      // Use exact equality instead of includes
+      if (key === fieldId) {
         // Map FieldType enum to string type
         switch (value) {
           case FieldType.Bool:
@@ -175,9 +180,12 @@ export class ValueControlService {
             return 'date';
           case FieldType.Time:
             return 'time';
+          case FieldType.Button:
+            return 'button';
           case FieldType.Text:
             return 'string';
           case FieldType.Dropdown:
+            return 'dropdown';
           default:
             return 'string';
         }
