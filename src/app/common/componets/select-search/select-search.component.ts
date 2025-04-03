@@ -92,6 +92,10 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   public mergeDisabled = true;
   public currentResultDisabled = true;
 
+  // Add these properties to the SelectSearchComponent class
+  public saveButtonEnabled = true;
+  public saveAsButtonEnabled = false;
+
   constructor(
     private changeDtr: ChangeDetectorRef,
     private languageService: LanguageService,
@@ -108,6 +112,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.setupSubscriptions();
     this.loadSelectedSystemTypeValuesFromStorage();
     this.loadSelectedFieldsFromStorage();
+    this.loadSearchDetailsFromStorage();
   }
 
   /**
@@ -116,6 +121,21 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   private loadSelectedFieldsFromStorage(): void {
     // This will trigger the selectionService to load and emit the stored selected fields
     this.selectionService.loadSelectedFieldsFromStorage(this.currentLanguage);
+  }
+
+  private loadSearchDetailsFromStorage(): void {
+    const storedSearchName = this.storageService.getItem('searchName');
+    const storedSearchNameId = this.storageService.getItem('searchNameId');
+
+    if (storedSearchName) {
+      this.searchName = storedSearchName;
+    }
+
+    if (storedSearchNameId) {
+      this.searchNameId = storedSearchNameId;
+    }
+
+    console.log('Loaded search details from storage:', this.searchName, this.searchNameId);
   }
 
   /**
@@ -446,9 +466,13 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
    */
   onSavedFieldSelected(field: SearchCriteria): void {
     if (!field) return;
-    // First clear existing fields and table data
     this.selectionService.clearFields();
-    this.isEditMode = true;
+    if (field.field.id && field.field.label) {
+      this.searchName = field.field.label;
+      this.storageService.setItem('searchName', this.searchName);
+      console.log('Saved field selected:', this.searchName, this.searchNameId);
+    }
+
     this.selectionService.addSavedGroupField(field);
   }
 
@@ -461,9 +485,11 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectionService.clearFields();
     // Check if the title and title.id exists
     if (groupField.title && groupField.title.id) {
-      this.isEditMode = true;
       this.searchName = groupField.title.label;
       this.searchNameId = groupField.title.id;
+      this.storageService.setItem('searchName', this.searchName);
+      this.storageService.setItem('searchNameId', this.searchNameId);
+      console.log('Saved group field title clicked:', this.searchName, this.searchNameId);
     } else {
       console.log('Saved group field has no title ID');
     }
@@ -499,6 +525,11 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.replaceDisabled = true;
     this.mergeDisabled = true;
     this.currentResultDisabled = true;
+
+    this.searchName = '';
+    this.searchNameId = '';
+    this.storageService.removeItem('searchName');
+    this.storageService.removeItem('searchNameId');
 
     // Reset to default selections
     this.searchLocation = 'inArchival';
@@ -556,6 +587,45 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.changeDtr.detectChanges();
   }
 
+  // Add this method to the SelectSearchComponent class
+  private updateSaveButtonsState(): void {
+    // Default states
+    this.saveButtonEnabled = true;
+    this.saveAsButtonEnabled = false;
+    // Check if we have a title id value
+    const hasTitleId = !!this.searchNameId;
+
+    // Get all row IDs from selected fields - Fix the property name from rowId to rowid
+    const selectedFieldRowIds = this.selectedFields.map(field => field.rowid || '');
+    // Check if all rowids are empty or undefined
+    const allRowIdsEmpty = selectedFieldRowIds.every(rowId => !rowId);
+    // Check if some rowids have data and some don't
+    const someRowIdsEmpty = !allRowIdsEmpty && selectedFieldRowIds.some(rowId => !rowId);
+    // Case 1: All rowids are empty or undefined (fresh search)
+    if (allRowIdsEmpty && !hasTitleId) {
+      // Enable Save, Disable SaveAs
+      this.saveButtonEnabled = true;
+      this.saveAsButtonEnabled = false;
+      return;
+    }
+
+    // Case 2: We have a title ID and all rowids have values
+    if (hasTitleId && !allRowIdsEmpty && !someRowIdsEmpty) {
+      // Enable both Save and SaveAs
+      this.saveButtonEnabled = true;
+      this.saveAsButtonEnabled = true;
+      return;
+    }
+
+    // Case 3: We have a title ID, but some rowids empty and some have data
+    if (hasTitleId && someRowIdsEmpty) {
+      // Enable Save only
+      this.saveButtonEnabled = true;
+      this.saveAsButtonEnabled = false;
+      return;
+    }
+  }
+
   // Handle search button click - matches searchTable() in HTML
   searchTable(): void {
     // Existing validation logic...
@@ -583,21 +653,19 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
 
     console.log('Search criteria:', searchCriteria);
     console.log('Search options:', searchOptions);
+    const requestBody = {
+      criteria: searchCriteria,
+      options: searchOptions
+    };
 
-    // Enable specific radio buttons based on conditions
-    // For now, as per temporary test requirement:
-    // - Enable "Into Selection" 
-    // - Keep "Into Result" disabled
+    console.log('Search request body:', requestBody);
+
     this.intoSelectionDisabled = false;
     this.intoResultDisabled = true;
 
-    // For radio-group-2, enable some options as an example
     this.replaceDisabled = false;
     this.mergeDisabled = false;
     this.currentResultDisabled = true;
-
-    // Execute the search via the search service
-    // ... existing search logic ...
 
     this.isLoading = false;
     this.loadingSubject.next(false);
@@ -605,6 +673,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   }
 
   // Handle store button click - matches storeTable() in HTML
+
   saveTable(): void {
     // Check if there are fields to save
     if (this.selectedFields.length === 0) {
@@ -620,11 +689,79 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Determine which save buttons should be enabled
+    this.updateSaveButtonsState();
+
     // Show the save container
     this.showSaveContainer = true;
     this.isDeleteMode = false;
-    this.searchName = '';
+    if (!this.searchNameId && this.selectedFields.length > 0) {
+      // Check if we have a first field with a label
+      if (this.selectedFields[0] && this.selectedFields[0].field &&
+        this.selectedFields[0].field.label) {
+        this.searchName = this.selectedFields[0].field.label;
+      } else {
+        this.searchName = '';
+      }
+    } else if (this.searchNameId) {
+      // For existing searches, maintain the existing name 
+      // (this.searchName should already be set from when the search was selected)
+    } else {
+      // Default case, empty search name
+      this.searchName = '';
+    }
+
     this.currentGroupField = null;
+    console.log('Setting search name to:', this.searchName);
+  }
+
+  // Add this new method for saveAs functionality
+
+  saveAsSearch(): void {
+    // Show loading state
+    this.isLoading = true;
+    this.loadingSubject.next(true);
+
+    // Always create a new search with empty ID
+    this.saveSearchDataAs(this.searchName);
+    this.cancelSave();
+  }
+
+  // Method for save as
+  saveSearchDataAs(searchName: string): void {
+    // Validate the search name
+    if (!searchName || searchName.trim() === '') {
+      this.hasError = true;
+      this.errorMessage = 'Please enter a name for your search.';
+      return;
+    }
+
+    // Validate selected fields
+    if (this.selectedFields.length === 0) {
+      this.hasError = true;
+      this.errorMessage = 'Please add fields before saving.';
+      return;
+    }
+
+    // Step 1: Convert selectedFields to searchCriteria
+    const searchCriteria = this.selectionService.convertSelectedFieldsToSearchCriteria(this.selectedFields);
+
+    // Step 2: Create a searchRequest object with the criteria - always with empty ID
+    const searchRequest: SearchRequest = {
+      title: {
+        id: '', // Always empty for saveAs
+        label: searchName.trim()
+      },
+      fields: searchCriteria
+    };
+
+    console.log('Save As - Search criteria:', searchRequest);
+
+    // Step 3: Save the search request
+    // this.searchService.saveSearchRequest(searchRequest);
+    this.isLoading = false;
+    this.loadingSubject.next(false);
+    this.cancelSave();
   }
 
   // Save the current search
@@ -632,8 +769,57 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     // Show loading state
     this.isLoading = true;
     this.loadingSubject.next(true);
-    this.saveFreshSearchData(this.searchName);
+    console.log('Saving search...');
+    // Check if there are fields to save    
+    console.log('Selected fields:', this.selectedFields);
+    console.log('Search ID:', this.searchNameId);
+
+    // If we have a searchNameId, it's an update operation
+    if (this.searchNameId) {
+      this.updateExistingSearch(this.searchName);
+    } else {
+      // Otherwise it's a fresh save
+      this.saveFreshSearchData(this.searchName);
+    }
+
     this.cancelSave();
+  }
+
+  // Add this new method for updating existing searches
+  updateExistingSearch(searchName: string): void {
+    // Validate the search name
+    if (!searchName || searchName.trim() === '') {
+      this.hasError = true;
+      this.errorMessage = 'Please enter a name for your search.';
+      return;
+    }
+
+    // Validate selected fields
+    if (this.selectedFields.length === 0) {
+      this.hasError = true;
+      this.errorMessage = 'Please add fields before saving.';
+      return;
+    }
+
+    // Step 1: Convert selectedFields to searchCriteria
+    const searchCriteria = this.selectionService.convertSelectedFieldsToSearchCriteria(this.selectedFields);
+
+    // Step 2: Create a searchRequest object with the criteria
+    const searchRequest: SearchRequest = {
+      title: {
+        id: this.searchNameId, // Use existing ID
+        label: searchName.trim()
+      },
+      fields: searchCriteria
+    };
+
+
+    console.log('Update search criteria:', searchRequest);
+
+    // Step 3: Save the search request
+    // this.searchService.updateSearchRequest(searchRequest);
+    this.isLoading = false;
+    this.loadingSubject.next(false);
   }
 
   // Add this new method to handle fresh search data saving
@@ -679,10 +865,12 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.showSaveContainer = false;
     this.isEditMode = false;
     this.isDeleteMode = false;
-    this.searchName = '';
     this.currentGroupField = null;
     this.hasError = false;
     this.errorMessage = '';
+    if (!this.searchNameId) {
+      this.searchName = '';
+    }
   }
 
   /**

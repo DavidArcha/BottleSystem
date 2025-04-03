@@ -58,7 +58,7 @@ export class ValueControlService {
       isSimilar: false,
       similarDropdownData: [] as DropdownItem[]
     };
-    console.log('Selected field:', selected);
+    // console.log('Selected field:', selected);
 
     // Only show controls if a valid operator is selected
     if (!selected.operator?.id || selected.operator.id === 'select') {
@@ -132,7 +132,7 @@ export class ValueControlService {
    * Convert field type to control type
    */
   private getControlType(fieldType: string): FieldType {
-    console.log('Field type:', fieldType);
+    // console.log('Field type:', fieldType);
     switch (fieldType) {
       case 'date':
         return FieldType.Date;

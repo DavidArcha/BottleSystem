@@ -15,9 +15,8 @@
         </app-saved-group-accordion>
     </div>
 
-    <!-- Existing code... -->
+
     <div class="first-accordion-section">
-        <!-- Accordion sections with trackBy for performance -->
         <app-accordion-section #firstAccordion *ngFor="let section of firstSystemFieldsData; trackBy: trackByFn"
             [section]="section" [parentPath]="''" [isLoading]="isLoading" [sectionType]="'first'"
             (fieldSelected)="onFirstAccFieldSelected($event)">
@@ -126,10 +125,9 @@
             <input type="text" id="searchName" [(ngModel)]="searchName" placeholder="Enter search name">
         </div>
         <div class="save-buttons">
-            <button *ngIf="!isEditMode" (click)="saveSearch()">Save</button>
-            <!-- <button *ngIf="isEditMode" (click)="saveAsSearch()">Save As</button>
-            <button *ngIf="isDeleteMode" (click)="confirmDelete()">Delete</button>
-            <button (click)="cancelSave()">Cancel</button> -->
+            <button [disabled]="!saveButtonEnabled" (click)="saveSearch()">Save</button>
+            <button [disabled]="!saveAsButtonEnabled" (click)="saveAsSearch()">Save As</button>
+            <button (click)="cancelSave()">Cancel</button>
         </div>
     </div>
 </div>
