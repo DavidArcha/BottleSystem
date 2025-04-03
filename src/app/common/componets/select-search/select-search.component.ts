@@ -469,7 +469,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.selectionService.clearFields();
     if (field.field.id && field.field.label) {
       this.searchName = field.field.label;
-      this.storageService.setItem('searchName', this.searchName);     
+      this.storageService.setItem('searchName', this.searchName);
       console.log('Saved field selected:', this.searchName, this.searchNameId);
     }
 
@@ -653,6 +653,12 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
 
     console.log('Search criteria:', searchCriteria);
     console.log('Search options:', searchOptions);
+    const requestBody = {
+      criteria: searchCriteria,
+      options: searchOptions
+    };
+
+    console.log('Search request body:', requestBody);
 
     this.intoSelectionDisabled = false;
     this.intoResultDisabled = true;
