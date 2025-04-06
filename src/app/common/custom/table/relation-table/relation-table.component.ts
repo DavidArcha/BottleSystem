@@ -140,6 +140,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
         }
       }
 
+      // Initialize parentSelected if needed
+      if (!field.parentSelected ||
+        (Array.isArray(field.parentSelected) && field.parentSelected.length === 0)) {
+        field.parentSelected = [{
+          id: "0",
+          label: "Archival type [all]"
+        }];
+        fieldChanged = true;
+      }
+
       // Initialize other field properties if needed
       if (field.isParentArray === true && !field.parentSelected) {
         field.parentSelected = [];
@@ -172,17 +182,6 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       if (field.valueTouched === undefined) {
         field.valueTouched = false;
         fieldChanged = true;
-      }
-    });
-
-    // Set the default "Archival type [all]" for fields without a selected parent
-    this.selectedFields.forEach(field => {
-      if (!field.parentSelected ||
-        (Array.isArray(field.parentSelected) && field.parentSelected.length === 0)) {
-        field.parentSelected = [{
-          id: "0",
-          label: `Archival type [all]`
-        }];
       }
     });
 
@@ -243,12 +242,6 @@ export class RelationTableComponent implements OnInit, OnDestroy {
             id: String(item.id)
           }));
 
-          // Add the "Archival type [all]" option at the beginning of the array
-          this.systemTypeData.unshift({
-            id: "0",  // Using "0" as the ID as specified in requirements
-            label: `Archival type [all]`
-          });
-
           this.relationTableService.updateSystemTypeData(this.systemTypeData);
           // Update existing selected fields with new language data
           if (fields.length > 0) {
@@ -295,6 +288,30 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+ * Gets system type data for the dropdown, only including "Archival type [all]" 
+ * when nothing is selected
+ */
+  getSystemTypeDataForDropdown(field: SelectedField): DropdownItem[] {
+    // If nothing is selected or only "Archival type [all]" is selected, 
+    // include the "Archival type [all]" option
+    if (!field.parentSelected ||
+      (Array.isArray(field.parentSelected) && field.parentSelected.length === 0) ||
+      (Array.isArray(field.parentSelected) && field.parentSelected.length === 1 &&
+        field.parentSelected[0].id === "0")) {
+
+      const archivalType: DropdownItem = {
+        id: "0",
+        label: "Archival type [all]",
+        isSpecial: true  // Mark as special to handle differently in the dropdown component if needed
+      };
+
+      return [archivalType, ...this.systemTypeData];
+    }
+
+    // Otherwise just return the regular system type data
+    return this.systemTypeData;
+  }
 
 
   /**
@@ -481,11 +498,19 @@ export class RelationTableComponent implements OnInit, OnDestroy {
    * Get parent selected values for dropdown binding
    */
   getParentSelectedIds(field: SelectedField): string[] {
-    // If no parent is selected, default to "Archival type [all]"
+    // If no parent is selected, show "Archival type [all]" as selected
     if (!field.parentSelected ||
       (Array.isArray(field.parentSelected) && field.parentSelected.length === 0)) {
       return ["0"];  // Default to "Archival type [all]"
     }
+
+    // If only real options are selected, return those
+    if (Array.isArray(field.parentSelected) &&
+      !field.parentSelected.some(item => item.id === "0")) {
+      return field.parentSelected.map(item => item.id);
+    }
+
+    // Otherwise use the regular method
     return this.relationTableService.getParentSelectedIds(field);
   }
 
@@ -498,12 +523,21 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Create copies of the selected items to avoid reference issues
     let selectedItems = selectedDropdownItems.map(item => ({ ...item }));
 
-    // If "Archival type [all]" is selected along with other options, keep only "Archival type [all]"
-    if (selectedItems.some(item => item.id === "0")) {
-      if (selectedItems.length > 1) {
-        selectedItems = [selectedItems.find(item => item.id === "0")!];
-      }
+    // Check if user selected some actual options (not "Archival type [all]")
+    const hasRealSelections = selectedItems.some(item => item.id !== "0");
+
+    // If real selections exist, remove "Archival type [all]" if it's there
+    if (hasRealSelections) {
+      selectedItems = selectedItems.filter(item => item.id !== "0");
     }
+    // If no real selections but "Archival type [all]" isn't selected, add it
+    else if (selectedItems.length === 0) {
+      selectedItems = [{
+        id: "0",
+        label: "Archival type [all]"
+      }];
+    }
+
     // Update parentSelected with the selected items
     field.parentSelected = selectedItems.length > 0 ? selectedItems : [];
 
@@ -578,7 +612,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Mark fields as touched for validation
     selected.parentTouched = true;
     selected.operatorTouched = true;
-    selected.valueTouched = true;  
+    selected.valueTouched = true;
 
     if (!this.isOperatorValid(selected)) {
       console.error('Operator validation failed');

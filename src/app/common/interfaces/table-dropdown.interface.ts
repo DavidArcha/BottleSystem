@@ -15,4 +15,5 @@ export interface DropdownItem {
     label?: string;
     selected?: boolean;
     tableData?: { [key: string]: any };
+    isSpecial?: boolean;
 }
