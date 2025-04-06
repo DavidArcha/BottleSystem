@@ -59,6 +59,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
         this.loadSystemTypeFields();
         this.clearOperatorDataCache();
         this.initializeValueControlData();// Clear cache on language change
+        this.updateArchivalTypeLabels();
       });
 
     // Load initial data
@@ -122,6 +123,40 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
 
   /**
+ * Update Archival type labels for all fields when language changes
+ */
+  private updateArchivalTypeLabels(): void {
+    let updated = false;
+
+    this.selectedFields.forEach(field => {
+      if (field.parentSelected) {
+        if (Array.isArray(field.parentSelected)) {
+          // Find all "Archival type [all]" entries and update their labels
+          const hasArchivalType = field.parentSelected.some(item => item.id === "0");
+
+          if (hasArchivalType) {
+            field.parentSelected = field.parentSelected.map(item => {
+              if (item.id === "0") {
+                return { id: "0", label: this.getArchivalTypeLabel() };
+              }
+              return item;
+            });
+            updated = true;
+          }
+        } else if (field.parentSelected.id === "0") {
+          // Update single selection
+          field.parentSelected.label = this.getArchivalTypeLabel();
+          updated = true;
+        }
+      }
+    });
+
+    if (updated) {
+      this.saveToLocalStorage();
+    }
+  }
+
+  /**
    * Initialize fields with default values if needed
    */
   private initializeFields(): void {
@@ -140,13 +175,25 @@ export class RelationTableComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Initialize parentSelected if needed
       if (!field.parentSelected ||
         (Array.isArray(field.parentSelected) && field.parentSelected.length === 0)) {
         field.parentSelected = [{
           id: "0",
-          label: "Archival type [all]"
+          label: this.getArchivalTypeLabel()
         }];
+        fieldChanged = true;
+      } else if (Array.isArray(field.parentSelected) &&
+        field.parentSelected.some(item => item.id === "0")) {
+        // Update the archival type label if language changed
+        field.parentSelected = field.parentSelected.map(item => {
+          if (item.id === "0") {
+            return {
+              id: "0",
+              label: this.getArchivalTypeLabel()
+            };
+          }
+          return item;
+        });
         fieldChanged = true;
       }
 
@@ -289,9 +336,9 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
 
   /**
- * Gets system type data for the dropdown, only including "Archival type [all]" 
- * when nothing is selected
- */
+   * Gets system type data for the dropdown, only including "Archival type [all]" 
+   * when nothing is selected
+   */
   getSystemTypeDataForDropdown(field: SelectedField): DropdownItem[] {
     // If nothing is selected or only "Archival type [all]" is selected, 
     // include the "Archival type [all]" option
@@ -302,7 +349,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
       const archivalType: DropdownItem = {
         id: "0",
-        label: "Archival type [all]",
+        label: this.getArchivalTypeLabel(),
         isSpecial: true  // Mark as special to handle differently in the dropdown component if needed
       };
 
@@ -311,6 +358,22 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
     // Otherwise just return the regular system type data
     return this.systemTypeData;
+  }
+
+  /**
+ * Gets the language-specific label for the "Archival type [all]" option
+ */
+  private getArchivalTypeLabel(): string {
+    // Return different labels based on selected language
+    switch (this.selectedLanguage.toLowerCase()) {
+      case 'de':
+        return 'Archival type [allDE]';
+      case 'en':
+        return 'Archival type [all]';
+      // Add more language cases as needed
+      default:
+        return 'Archival type [all]';
+    }
   }
 
 
@@ -534,7 +597,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     else if (selectedItems.length === 0) {
       selectedItems = [{
         id: "0",
-        label: "Archival type [all]"
+        label: this.getArchivalTypeLabel()
       }];
     }
 
