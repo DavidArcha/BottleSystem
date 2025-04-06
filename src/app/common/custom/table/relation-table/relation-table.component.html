@@ -25,13 +25,8 @@
                     <ng-container *ngIf="shouldShowParentDropdown(field) && !isLoading">
                         <app-table-dropdown [data]="systemTypeData" [isTableView]="false" [multiSelect]="true"
                             [selectedValues]="getParentSelectedIds(field)" [selectedLanguage]="selectedLanguage"
-                            (selectedValuesChange)="onParentValueChange($event, i)" [showClearButton]="true">
+                            (selectedValuesChange)="onParentValueChange($event, i)" [showClearButton]="false">
                         </app-table-dropdown>
-
-                        <!-- Validation error -->
-                        <div class="validation-error" *ngIf="field.parentTouched && !isParentValid(field)">
-                            Please select a parent.
-                        </div>
                     </ng-container>
 
                     <!-- Display parent label when dropdown shouldn't be shown -->

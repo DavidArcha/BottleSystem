@@ -7,7 +7,6 @@
         </label>
     </div>
 
-    <!-- Existing code... -->
     <div *ngIf="showGroupDataOutside">
         <app-saved-group-accordion #savedGroupAccordion [groups]="savedGroupFields"
             (fieldSelected)="onSavedFieldSelected($event)"
@@ -15,13 +14,13 @@
         </app-saved-group-accordion>
     </div>
 
-
     <div class="first-accordion-section">
         <app-accordion-section #firstAccordion *ngFor="let section of firstSystemFieldsData; trackBy: trackByFn"
             [section]="section" [parentPath]="''" [isLoading]="isLoading" [sectionType]="'first'"
             (fieldSelected)="onFirstAccFieldSelected($event)">
         </app-accordion-section>
     </div>
+    
     <!-- Loading indicator for system types -->
     <div *ngIf="loadingSystemTypes" class="loading-indicator">
         <span>Loading system types...</span>

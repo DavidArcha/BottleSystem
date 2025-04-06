@@ -470,7 +470,6 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     if (field.field.id && field.field.label) {
       this.searchName = field.field.label;
       this.storageService.setItem('searchName', this.searchName);
-      console.log('Saved field selected:', this.searchName, this.searchNameId);
     }
 
     this.selectionService.addSavedGroupField(field);

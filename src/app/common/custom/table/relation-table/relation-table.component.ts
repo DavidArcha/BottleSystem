@@ -175,6 +175,17 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       }
     });
 
+    // Set the default "Archival type [all]" for fields without a selected parent
+    this.selectedFields.forEach(field => {
+      if (!field.parentSelected ||
+        (Array.isArray(field.parentSelected) && field.parentSelected.length === 0)) {
+        field.parentSelected = [{
+          id: "0",
+          label: `Archival type [all]`
+        }];
+      }
+    });
+
     // Only save if changes were made
     if (fieldChanged) {
       this.relationTableService.saveToLocalStorage(this.selectedFields);
@@ -231,6 +242,12 @@ export class RelationTableComponent implements OnInit, OnDestroy {
             ...item,
             id: String(item.id)
           }));
+
+          // Add the "Archival type [all]" option at the beginning of the array
+          this.systemTypeData.unshift({
+            id: "0",  // Using "0" as the ID as specified in requirements
+            label: `Archival type [all]`
+          });
 
           this.relationTableService.updateSystemTypeData(this.systemTypeData);
           // Update existing selected fields with new language data
@@ -448,6 +465,15 @@ export class RelationTableComponent implements OnInit, OnDestroy {
    * Check if parent selection is valid
    */
   isParentValid(field: SelectedField): boolean {
+    if (field.parentSelected) {
+      if (Array.isArray(field.parentSelected)) {
+        if (field.parentSelected.some(item => item.id === "0")) {
+          return true;
+        }
+      } else if (field.parentSelected.id === "0") {
+        return true;
+      }
+    }
     return this.relationTableService.isParentValid(field);
   }
 
@@ -455,6 +481,11 @@ export class RelationTableComponent implements OnInit, OnDestroy {
    * Get parent selected values for dropdown binding
    */
   getParentSelectedIds(field: SelectedField): string[] {
+    // If no parent is selected, default to "Archival type [all]"
+    if (!field.parentSelected ||
+      (Array.isArray(field.parentSelected) && field.parentSelected.length === 0)) {
+      return ["0"];  // Default to "Archival type [all]"
+    }
     return this.relationTableService.getParentSelectedIds(field);
   }
 
@@ -465,8 +496,14 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     const field = this.selectedFields[index];
 
     // Create copies of the selected items to avoid reference issues
-    const selectedItems = selectedDropdownItems.map(item => ({ ...item }));
+    let selectedItems = selectedDropdownItems.map(item => ({ ...item }));
 
+    // If "Archival type [all]" is selected along with other options, keep only "Archival type [all]"
+    if (selectedItems.some(item => item.id === "0")) {
+      if (selectedItems.length > 1) {
+        selectedItems = [selectedItems.find(item => item.id === "0")!];
+      }
+    }
     // Update parentSelected with the selected items
     field.parentSelected = selectedItems.length > 0 ? selectedItems : [];
 
@@ -490,9 +527,12 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     }
     // Emit for parent component handling
     this.parentValueChange.emit({ selectedValues: selectedItems, index });
+
     // Save changes
     this.saveToLocalStorage();
   }
+
+
   /**
  * Initialize data needed for value controls
  */
@@ -538,13 +578,7 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Mark fields as touched for validation
     selected.parentTouched = true;
     selected.operatorTouched = true;
-    selected.valueTouched = true;
-
-    // Validate all required fields
-    if (!this.isParentValid(selected)) {
-      console.error('Parent validation failed');
-      return;
-    }
+    selected.valueTouched = true;  
 
     if (!this.isOperatorValid(selected)) {
       console.error('Operator validation failed');
@@ -583,9 +617,9 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     this.selectedFields.forEach((field, index) => {
       // Check parent validation
       field.parentTouched = true;
-      if (!this.isParentValid(field)) {
-        invalidFieldsMessages.push(`Row ${index + 1}: Parent selection`);
-      }
+      // if (!this.isParentValid(field)) {
+      //   invalidFieldsMessages.push(`Row ${index + 1}: Parent selection`);
+      // }
 
       // Check operator validation
       field.operatorTouched = true;
