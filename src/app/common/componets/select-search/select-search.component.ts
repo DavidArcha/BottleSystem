@@ -62,6 +62,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   public loadingSavedGroups = false;
   public currentLanguage = 'en';
   public operationsDDData: any;
+  public SaveGroupTittleLabel: any;
 
   // Performance optimization
   trackByFn = trackByFn;
@@ -374,6 +375,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   onFirstAccFieldSelected(item: any): void {
     const field = this.searchProcessService.extractFieldFromItem(item);
     if (!field) return;
+    this.SaveGroupTittleLabel = '';
 
     this.isParentArray = true;
     const emptyParent = { id: '', label: '' };
@@ -444,7 +446,6 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response: any) => {
           if (response && response.groupFields) {
-            console.log('Saved searches loaded:', response);
             this.stateService.setSavedGroupFields(response);
           } else {
             this.stateService.setSavedGroupFields([]);
@@ -465,15 +466,69 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
    * Handle saved field selection
    */
   onSavedFieldSelected(field: SearchCriteria): void {
-    if (!field) return;
+    if (!field) {
+      console.log('No field provided to onSavedFieldSelected');
+      return;
+    }
+
     this.selectionService.clearFields();
-    if (field.field.id && field.field.label) {
-      this.searchName = field.field.label;
+    // Extract the field's parent group information
+    const selectedFieldGroup = this.findParentGroupForField(field, this.savedGroupFields);
+
+    if (selectedFieldGroup?.title) {
+      // Store the parent group's title for later use in save operations
+      console.log('Found matching group:', selectedFieldGroup, selectedFieldGroup.title.label, selectedFieldGroup.title.id);
+      this.searchName = field.field?.label || '';
+      this.SaveGroupTittleLabel = selectedFieldGroup.title.label;
+      this.searchNameId = selectedFieldGroup.title.id?.toString() || '';
       this.storageService.setItem('searchName', this.searchName);
-      console.log('Saved field selected:', this.searchName, this.searchNameId);
+      this.storageService.setItem('searchNameId', this.searchNameId);
+      console.log('Using group title from matching group:', this.searchName, this.searchNameId);
+    } else {
+      // Fallback to field's own label if no parent group title found
+      this.searchName = field.field?.label || '';
+      this.storageService.setItem('searchName', this.searchName);
+      this.searchNameId = ''; // New search when no parent group is found
+      this.storageService.removeItem('searchNameId');
+      console.log('No matching group found, using field label as fallback:', this.searchName);
     }
 
     this.selectionService.addSavedGroupField(field);
+  }
+
+  /**
+   * Find the parent group for a selected field based on rowId
+   * @param field The field to find the parent group for
+   * @param savedGroups The array of saved groups to search in
+   * @returns The parent group if found, or undefined if not found
+   */
+  private findParentGroupForField(field: SearchCriteria, savedGroups: any): SearchRequest | undefined {
+    console.log('Searching for parent group for field with rowId:', field.rowId);
+
+    // If no savedGroups or it's not in the expected format, return undefined
+    if (!savedGroups || !savedGroups.groupFields || !Array.isArray(savedGroups.groupFields)) {
+      console.log('Invalid savedGroups structure:', savedGroups);
+      return undefined;
+    }
+
+    // Iterate through each groupField in groupFields array
+    for (const groupField of savedGroups.groupFields) {
+      // Each groupField should have a title and fields array
+      if (!groupField.fields || !Array.isArray(groupField.fields)) {
+        console.log('Skipping groupField without valid fields array:', groupField);
+        continue;
+      }
+
+      // Look for our field in this groupField's fields array by rowId first
+      const fieldMatch = groupField.fields.find((f: any) => {
+        return f.rowId === field.rowId;
+      });
+
+      if (fieldMatch) {
+        return groupField;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -482,9 +537,12 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
   onSavedGroupFieldTitleClicked(groupField: SearchRequest): void {
     if (!groupField) return;
 
+
+
     this.selectionService.clearFields();
     // Check if the title and title.id exists
     if (groupField.title && groupField.title.id) {
+      this.SaveGroupTittleLabel = groupField.title.label;
       this.searchName = groupField.title.label;
       this.searchNameId = groupField.title.id;
       this.storageService.setItem('searchName', this.searchName);
@@ -722,6 +780,9 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.loadingSubject.next(true);
 
+    // Always create a new search with empty ID, even if we have a searchNameId
+    // This ensures Save As always creates a new record
+    const newSearchName = this.searchName.trim() !== '' ? this.searchName : 'New Search';
     // Always create a new search with empty ID
     this.saveSearchDataAs(this.searchName);
     this.cancelSave();
@@ -729,6 +790,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
 
   // Method for save as
   saveSearchDataAs(searchName: string): void {
+
     // Validate the search name
     if (!searchName || searchName.trim() === '') {
       this.hasError = true;
@@ -770,13 +832,18 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.loadingSubject.next(true);
     console.log('Saving search...');
+
     // Check if there are fields to save    
     console.log('Selected fields:', this.selectedFields);
     console.log('Search ID:', this.searchNameId);
+    console.log('Save Group Title Label:', this.SaveGroupTittleLabel);
 
     // If we have a searchNameId, it's an update operation
     if (this.searchNameId) {
-      this.updateExistingSearch(this.searchName);
+      // Use SaveGroupTittleLabel if available, otherwise use searchName
+      const titleToUse = this.SaveGroupTittleLabel || this.searchName;
+      console.log('Using title for update:', titleToUse);
+      this.updateExistingSearch(titleToUse);
     } else {
       // Otherwise it's a fresh save
       this.saveFreshSearchData(this.searchName);
