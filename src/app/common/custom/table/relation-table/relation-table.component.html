@@ -71,7 +71,7 @@
                                 <!-- Number input for similar -->
                                 <ng-container *ngSwitchCase="FieldType.Number">
                                     <div class="similar-field-container">
-                                        <input type="number" [(ngModel)]="field.value[0]"
+                                        <input type="text" [(ngModel)]="field.value[0]"
                                             (blur)="field.valueTouched = true;saveToLocalStorage()"
                                             (input)="validateNumberInput($event, field)" />
                                         <span class="similar-text">similar to</span>
@@ -153,11 +153,11 @@
                                         <input type="text"
                                             [ngModel]="field.value && field.value[0] ? field.value[0] : ''"
                                             (ngModelChange)="onDualTextValueChange($event, field, 0)"
-                                            (blur)="field.valueTouched = true" />
+                                            (blur)="field.valueTouched = true; saveToLocalStorage()" />
                                         <input type="text"
                                             [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
                                             (ngModelChange)="onDualTextValueChange($event, field, 1)"
-                                            (blur)="field.valueTouched = true" />
+                                            (blur)="field.valueTouched = true; saveToLocalStorage()" />
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">
@@ -170,7 +170,8 @@
                             <!-- Number inputs -->
                             <ng-container *ngSwitchCase="FieldType.Number">
                                 <ng-container *ngIf="!getValueControl(field).dual; else dualNumberInputs">
-                                    <input type="number" [(ngModel)]="field.value" (blur)="field.valueTouched = true"
+                                    <input type="text" [(ngModel)]="field.value"
+                                        (blur)="field.valueTouched = true; saveToLocalStorage()"
                                         (input)="validateNumberInput($event, field)" />
                                     <!-- Single value validation error -->
                                     <div class="validation-error" *ngIf="field.valueTouched && !isValueValid(field)">
@@ -179,12 +180,12 @@
                                 </ng-container>
                                 <ng-template #dualNumberInputs>
                                     <div class="dual-input-container">
-                                        <input type="number"
+                                        <input type="text"
                                             [ngModel]="field.value && field.value[0] !== undefined ? field.value[0] : ''"
                                             (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
                                             (blur)="field.valueTouched = true; saveToLocalStorage()"
                                             (input)="validateDualNumberInput($event, field, 0)" />
-                                        <input type="number"
+                                        <input type="text"
                                             [ngModel]="field.value && field.value[1] !== undefined ? field.value[1] : ''"
                                             (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
                                             (blur)="field.valueTouched = true; saveToLocalStorage()"
@@ -199,25 +200,71 @@
                             </ng-container>
 
                             <!-- Date inputs (can be expanded later) -->
+                            <!-- Date inputs with DD/MM/yyyy format display -->
                             <ng-container *ngSwitchCase="FieldType.Date">
                                 <ng-container *ngIf="!getValueControl(field).dual; else dualDateInputs">
-                                    <input type="date" [(ngModel)]="field.value"
-                                        (blur)="field.valueTouched = true;saveToLocalStorage()" />
+                                    <div class="date-input-wrapper">
+                                        <!-- Hidden standard date input -->
+                                        <input type="date" [(ngModel)]="field.value"
+                                            (ngModelChange)="onDateValueChange($event, field)"
+                                            (blur)="field.valueTouched = true; saveToLocalStorage()"
+                                            class="hidden-date-input" />
+
+                                        <!-- Custom formatted date display -->
+                                        <div class="formatted-date-display" [class.has-value]="field.value">
+                                            {{ field.value ? formatDateForDisplay(field.value) : 'DD/MM/YYYY' }}
+                                        </div>
+
+                                        <!-- Calendar icon (optional) -->
+                                        <span class="calendar-icon">📅</span>
+                                    </div>
+
                                     <!-- Single value validation error -->
                                     <div class="validation-error" *ngIf="field.valueTouched && !isValueValid(field)">
                                         Please select a date.
                                     </div>
                                 </ng-container>
+
                                 <ng-template #dualDateInputs>
                                     <div class="dual-input-container">
-                                        <input type="date"
-                                            [ngModel]="field.value && field.value[0] ? field.value[0] : ''"
-                                            (ngModelChange)="field.value = initDualValue(field.value); field.value[0] = $event"
-                                            (blur)="field.valueTouched = true;saveToLocalStorage()" />
-                                        <input type="date"
-                                            [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
-                                            (ngModelChange)="field.value = initDualValue(field.value); field.value[1] = $event"
-                                            (blur)="field.valueTouched = true;saveToLocalStorage()" />
+                                        <!-- First date input -->
+                                        <div class="date-input-wrapper">
+                                            <input type="date"
+                                                [ngModel]="field.value && field.value[0] ? field.value[0] : ''"
+                                                (ngModelChange)="onDateValueChange($event, field, 0)"
+                                                (blur)="field.valueTouched = true; saveToLocalStorage()"
+                                                class="hidden-date-input" />
+
+                                            <!-- Custom formatted date display -->
+                                            <div class="formatted-date-display"
+                                                [class.has-value]="field.value && field.value[0]">
+                                                {{ (field.value && field.value[0]) ?
+                                                formatDateForDisplay(field.value[0]) : 'DD/MM/YYYY' }}
+                                            </div>
+
+                                            <!-- Calendar icon (optional) -->
+                                            <span class="calendar-icon">📅</span>
+                                        </div>
+
+                                        <!-- Second date input -->
+                                        <div class="date-input-wrapper">
+                                            <input type="date"
+                                                [ngModel]="field.value && field.value[1] ? field.value[1] : ''"
+                                                (ngModelChange)="onDateValueChange($event, field, 1)"
+                                                (blur)="field.valueTouched = true; saveToLocalStorage()"
+                                                class="hidden-date-input" />
+
+                                            <!-- Custom formatted date display -->
+                                            <div class="formatted-date-display"
+                                                [class.has-value]="field.value && field.value[1]">
+                                                {{ (field.value && field.value[1]) ?
+                                                formatDateForDisplay(field.value[1]) : 'DD/MM/YYYY' }}
+                                            </div>
+
+                                            <!-- Calendar icon (optional) -->
+                                            <span class="calendar-icon">📅</span>
+                                        </div>
+
                                         <!-- Dual value validation error -->
                                         <div class="validation-error"
                                             *ngIf="field.valueTouched && !isValueValid(field)">

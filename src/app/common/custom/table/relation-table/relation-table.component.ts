@@ -246,10 +246,12 @@ export class RelationTableComponent implements OnInit, OnDestroy {
   }
 
   /**
- * Initialize dual value array if null or undefined
- */
+   * Initialize dual value array if it doesn't exist
+   * @param value The current value
+   * @returns An initialized array with the current values or empty strings
+   */
   initDualValue(value: any): any[] {
-    if (!Array.isArray(value)) {
+    if (!value || !Array.isArray(value)) {
       return ['', ''];
     }
     return value;
@@ -273,6 +275,23 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     // Mark as touched and save to localStorage
     field.valueTouched = true;
     this.saveToLocalStorage();
+  }
+
+  /**
+ * Handle date input value changes
+ * @param value The new value
+ * @param field The field being updated
+ * @param index Optional index for dual inputs
+ */
+  onDateValueChange(value: any, field: SelectedField, index?: number): void {
+    if (index !== undefined) {
+      field.value = this.initDualValue(field.value);
+      field.value[index] = value;
+    } else {
+      field.value = value;
+    }
+    field.valueTouched = true;
+    this.saveToLocalStorage(); // Save to localStorage on each change
   }
 
   /**
@@ -399,8 +418,11 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       case 'date':
         operators = this.dropdownDataService.getDateOperators(this.selectedLanguage);
         break;
-      case 'time':
-        operators = this.dropdownDataService.getDateOperators(this.selectedLanguage);
+      case 'button':
+        operators = this.dropdownDataService.getButtonOperators(this.selectedLanguage);
+        break;
+      case 'dropdown':
+        operators = this.dropdownDataService.getDropdownOperators(this.selectedLanguage);
         break;
       case 'string':
       default:
@@ -422,10 +444,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
       if (!Array.isArray(selected.value)) return false;
 
       if (control.type === this.FieldType.Number) {
-        // For number fields, check if both are valid numbers
-        return selected.value.length >= 2 &&
-          selected.value[0] !== null && selected.value[0] !== undefined && selected.value[0] !== '' &&
-          selected.value[1] !== null && selected.value[1] !== undefined && selected.value[1] !== '';
+        // For number fields, validate both values are valid numbers and not empty
+        if (selected.value.length < 2) return false;
+
+        const firstValue = selected.value[0];
+        const secondValue = selected.value[1];
+
+        // Use regex to validate actual numbers (requires at least one digit)
+        const numRegex = /^-?\d*\.?\d+$/;
+
+        return numRegex.test(String(firstValue)) && numRegex.test(String(secondValue));
       }
 
       // For other field types
@@ -434,6 +462,16 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     }
 
     // For regular single values
+    if (control.type === this.FieldType.Number) {
+      if (selected.value === null || selected.value === undefined || selected.value === '')
+        return false;
+
+      // Use regex to validate actual numbers (requires at least one digit)
+      const numRegex = /^-?\d*\.?\d+$/;
+      return numRegex.test(String(selected.value));
+    }
+
+    // For other single inputs
     return selected.value !== null && selected.value !== undefined && selected.value !== '';
   }
 
@@ -745,45 +783,52 @@ export class RelationTableComponent implements OnInit, OnDestroy {
     this.deleteSelectedField.emit(index);
   }
 
-  // Add these methods for numeric validation
-
-  // Validate single number input field
-  validateNumberInput(event: Event, selected: SelectedField): void {
+  /**
+   * Validate number input and ensure it contains only numeric values
+   * @param event The input event
+   * @param field The field being updated
+   */
+  validateNumberInput(event: Event, field: SelectedField): void {
     const input = event.target as HTMLInputElement;
     const value = input.value;
 
-    // If empty, allow it (will be caught by required validation if needed)
-    if (!value) {
-      return;
+    // Allow empty value, digits, decimal point, and minus sign (for negative numbers)
+    const regex = /^-?\d*\.?\d*$/;
+
+    if (!regex.test(value)) {
+      // If invalid, remove the last character
+      input.value = value.substring(0, value.length - 1);
+      // Update the model
+      field.value = input.value;
     }
 
-    // Check if value is numeric
-    if (!/^-?\d*\.?\d*$/.test(value)) {
-      // If not numeric, revert to previous valid value or empty string
-      input.value = selected.value || '';
-      selected.value = input.value;
-    }
+    // Save to localStorage on each valid change
+    this.saveToLocalStorage();
   }
 
-  // Validate dual number input fields
-  validateDualNumberInput(event: Event, selected: SelectedField, index: number): void {
+  /**
+   * Validate dual number input fields
+   * @param event The input event
+   * @param field The field being updated
+   * @param index The index of the dual input (0 or 1)
+   */
+  validateDualNumberInput(event: Event, field: SelectedField, index: number): void {
     const input = event.target as HTMLInputElement;
     const value = input.value;
 
-    // Ensure field.value is an array
-    if (!Array.isArray(selected.value)) {
-      selected.value = ['', ''];
+    // Allow empty value, digits, decimal point, and minus sign (for negative numbers)
+    const regex = /^-?\d*\.?\d*$/;
+
+    if (!regex.test(value)) {
+      // If invalid, remove the last character
+      input.value = value.substring(0, value.length - 1);
+      // Update the model
+      if (!field.value) field.value = ['', ''];
+      field.value[index] = input.value;
     }
 
-    // Validate the input based on your requirements
-    if (value && !isNaN(Number(value))) {
-      selected.value[index] = Number(value);
-    } else {
-      selected.value[index] = '';
-    }
-
-    // Save changes to localStorage
-    this.relationTableService.saveToLocalStorage(this.selectedFields);
+    // Save to localStorage on each valid change
+    this.saveToLocalStorage();
   }
   /**
    * Handle text input value changes
@@ -1041,6 +1086,51 @@ export class RelationTableComponent implements OnInit, OnDestroy {
 
       // Save changes
       this.saveToLocalStorage();
+    }
+  }
+
+  /**
+ * Format date from ISO format to display format (DD/MM/yyyy)
+ * @param isoDate The date in ISO format
+ * @returns Formatted date string
+ */
+  public formatDateForDisplay(isoDate: string): string {
+    if (!isoDate) return '';
+
+    try {
+      const date = new Date(isoDate);
+      if (isNaN(date.getTime())) return ''; // Invalid date
+
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return '';
+    }
+  }
+
+  /**
+   * Parse a date from display format (DD/MM/yyyy) to ISO format
+   * @param displayDate The date in display format
+   * @returns ISO date string
+   */
+  private parseDisplayDate(displayDate: string): string {
+    if (!displayDate) return '';
+
+    try {
+      const [day, month, year] = displayDate.split('/');
+      if (!day || !month || !year) return '';
+
+      const date = new Date(Number(year), Number(month) - 1, Number(day));
+      if (isNaN(date.getTime())) return ''; // Invalid date
+
+      return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+    } catch (e) {
+      console.error('Error parsing date:', e);
+      return '';
     }
   }
 }
