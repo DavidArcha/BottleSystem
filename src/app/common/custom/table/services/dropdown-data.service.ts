@@ -32,8 +32,9 @@ export class DropdownDataService {
       case 'date':
         categoryKey = 'dateOperations';
         break;
-      case 'time':
-        categoryKey = 'timeOperations';
+      case 'button':
+      case 'dropdown':
+        categoryKey = 'tOperations';
         break;
       case 'string':
       default:
@@ -71,5 +72,13 @@ export class DropdownDataService {
 
   getBooleanOperators(language: string = 'en'): DropdownItem[] {
     return this.getOperatorData('boolean', language);
+  }
+
+  getButtonOperators(language: string = 'en'): DropdownItem[] {
+    return this.getOperatorData('button', language);
+  }
+
+  getDropdownOperators(language: string = 'en'): DropdownItem[] {
+    return this.getOperatorData('dropdown', language);
   }
 }

@@ -476,8 +476,6 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     const selectedFieldGroup = this.findParentGroupForField(field, this.savedGroupFields);
 
     if (selectedFieldGroup?.title) {
-      // Store the parent group's title for later use in save operations
-      console.log('Found matching group:', selectedFieldGroup, selectedFieldGroup.title.label, selectedFieldGroup.title.id);
       this.searchName = field.field?.label || '';
       this.SaveGroupTittleLabel = selectedFieldGroup.title.label;
       this.searchNameId = selectedFieldGroup.title.id?.toString() || '';
@@ -536,9 +534,6 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
    */
   onSavedGroupFieldTitleClicked(groupField: SearchRequest): void {
     if (!groupField) return;
-
-
-
     this.selectionService.clearFields();
     // Check if the title and title.id exists
     if (groupField.title && groupField.title.id) {
@@ -576,7 +571,8 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.storageService.clearStorageData();
     this.resetErrorState();
     this.resetUIElements();
-
+    this.clearSearchMetadata();
+    
     // Reset all disabled states
     this.intoSelectionDisabled = true;
     this.intoResultDisabled = true;
@@ -849,6 +845,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
       this.saveFreshSearchData(this.searchName);
     }
 
+    this.clearSearchMetadata();
     this.cancelSave();
   }
 
@@ -887,6 +884,8 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     // this.searchService.updateSearchRequest(searchRequest);
     this.isLoading = false;
     this.loadingSubject.next(false);
+    this.clearSearchMetadata();
+    this.cancelSave();
   }
 
   // Add this new method to handle fresh search data saving
@@ -923,6 +922,7 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
     this.searchService.saveSearchRequest(searchRequest);
     this.isLoading = false;
     this.loadingSubject.next(false);
+    this.clearSearchMetadata();
     this.cancelSave();
   }
 
@@ -939,7 +939,14 @@ export class SelectSearchComponent implements OnInit, OnDestroy {
       this.searchName = '';
     }
   }
-
+  // Add this method to clear search metadata
+  private clearSearchMetadata(): void {
+    this.searchName = '';
+    this.searchNameId = '';
+    this.SaveGroupTittleLabel = '';
+    this.storageService.removeItem('searchName');
+    this.storageService.removeItem('searchNameId');
+  }
   /**
    * Component cleanup
    */
