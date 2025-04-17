@@ -24,6 +24,7 @@ import { SavedGroupAccordionComponent } from './common/custom/accordion/saved-gr
 import { TestingSavedSaerchAccComponent } from './common/testingcomponents/testing-saved-saerch-acc/testing-saved-saerch-acc.component';
 import { RelationTableComponent } from './common/custom/table/relation-table/relation-table.component';
 import { LocalizedDropdownComponent } from './common/custom/dropdowns/localized-dropdown/localized-dropdown.component';
+import { MultilevelAccordionComponent } from './common/custom/accordion/multilevel-accordion/multilevel-accordion.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,8 @@ import { LocalizedDropdownComponent } from './common/custom/dropdowns/localized-
     SavedGroupAccordionComponent,
     TestingSavedSaerchAccComponent,
     RelationTableComponent,
-    LocalizedDropdownComponent
+    LocalizedDropdownComponent,
+    MultilevelAccordionComponent
   ],
   imports: [
     BrowserModule,
